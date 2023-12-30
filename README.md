@@ -32,13 +32,11 @@ QuizLearn is a web application that allows users to create and take quizzes. It 
    ```sh
    git clone git@github.com:blackmouse572/quizler-api.git
    ```
-2. Install NPM packages
+2. Build the solution
 
    ```sh
    dotnet build
    ```
-
-   > If you don't have pnpm installed, run `npm install -g pnpm` to install it globally.
 
 ### Running the app
 
