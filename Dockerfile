@@ -3,11 +3,11 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /app
 
 # Copy the project file and restore dependencies
-COPY fuquizlearn_api/*.csproj .
+COPY *.csproj .
 RUN dotnet restore
 
 # Copy the application code
-COPY fuquizlearn_api/ .
+COPY . .
 
 # Build the application
 RUN dotnet publish -c Release -o out
@@ -19,8 +19,9 @@ WORKDIR /app
 # Copy the published application
 COPY --from=build /app/out .
 
-# Expose the port the app will run on
-EXPOSE 80
+# Expose the ports the app will run on
+EXPOSE 5000
+EXPOSE 5001
 
 # Define the command to run your application
 ENTRYPOINT ["dotnet", "fuquizlearn_api.dll"]
