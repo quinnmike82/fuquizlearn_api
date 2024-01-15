@@ -37,7 +37,7 @@ namespace fuquizlearn_api.Services
         private readonly IJwtUtils _jwtUtils;
         private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
-/*        private readonly IEmailService _emailService;*/
+        private readonly IEmailService _emailService;
 
         public AccountService(
             DataContext context,
@@ -50,7 +50,7 @@ namespace fuquizlearn_api.Services
             _jwtUtils = jwtUtils;
             _mapper = mapper;
             _appSettings = appSettings.Value;
-           /* _emailService = emailService;*/
+            _emailService = emailService;
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -126,7 +126,7 @@ namespace fuquizlearn_api.Services
                 throw new AppException("Invalid token");
 
             // revoke token and save
-          /*  revokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");*/
+            revokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");
             _context.Update(account);
             _context.SaveChanges();
         }
@@ -137,7 +137,7 @@ namespace fuquizlearn_api.Services
             if (_context.Accounts.Any(x => x.Email == model.Email))
             {
                 // send already registered error in email to prevent account enumeration
-                /*sendAlreadyRegisteredEmail(model.Email, origin);*/
+                sendAlreadyRegisteredEmail(model.Email, origin);
                 return;
             }
 
@@ -158,7 +158,7 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
             Console.WriteLine(account.VerificationToken);
             // send email
-            /* sendVerificationEmail(account, origin);*/
+            sendVerificationEmail(account, origin);
         }
 
         public void VerifyEmail(string token)
@@ -190,7 +190,7 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
 
             // send email
-            /*sendPasswordResetEmail(account, origin);*/
+            sendPasswordResetEmail(account, origin);
         }
 
         public void ValidateResetToken(ValidateResetTokenRequest model)
@@ -372,7 +372,7 @@ namespace fuquizlearn_api.Services
             token.ReplacedByToken = replacedByToken;
         }
 
-        /*private void sendVerificationEmail(Account account, string origin)
+        private void sendVerificationEmail(Account account, string origin)
         {
             string message;
             if (!string.IsNullOrEmpty(origin))
@@ -391,7 +391,7 @@ namespace fuquizlearn_api.Services
                             <p><code>{account.VerificationToken}</code></p>";
             }
 
-            _emailService.Send(
+            _emailService.SendAsync(
                 to: account.Email,
                 subject: "Sign-up Verification API - Verify Email",
                 html: $@"<h4>Verify Email</h4>
@@ -408,7 +408,7 @@ namespace fuquizlearn_api.Services
             else
                 message = "<p>If you don't know your password you can reset it via the <code>/accounts/forgot-password</code> api route.</p>";
 
-            _emailService.Send(
+            _emailService.SendAsync(
                 to: email,
                 subject: "Sign-up Verification API - Email Already Registered",
                 html: $@"<h4>Email Already Registered</h4>
@@ -432,12 +432,12 @@ namespace fuquizlearn_api.Services
                             <p><code>{account.ResetToken}</code></p>";
             }
 
-            _emailService.Send(
+            _emailService.SendAsync(
                 to: account.Email,
                 subject: "Sign-up Verification API - Reset Password",
                 html: $@"<h4>Reset Password Email</h4>
                         {message}"
             );
-        }*/
+        }
     }
 }

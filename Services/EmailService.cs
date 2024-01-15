@@ -1,41 +1,60 @@
-﻿using fuquizlearn_api.Helpers;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using Microsoft.Extensions.Options;
-using MimeKit;
-using MimeKit.Text;
+﻿using System;
+using System.Threading.Tasks;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace fuquizlearn_api.Services
 {
     public interface IEmailService
     {
-        void Send(string to, string subject, string html, string from = null);
+        Task SendAsync(string to, string subject, string html, string from = null);
     }
 
     public class EmailService : IEmailService
     {
-        private readonly AppSettings _appSettings;
+        private readonly ISendGridClient _sendGridClient;
 
-        public EmailService(IOptions<AppSettings> appSettings)
+        public EmailService(ISendGridClient sendGridClient)
         {
-            _appSettings = appSettings.Value;
+            _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
         }
 
-        public void Send(string to, string subject, string html, string from = null)
+        public async Task SendAsync(string to, string subject, string html, string from = null)
         {
-            // create message
-            var email = new MimeMessage();
-            email.From.Add(MailboxAddress.Parse(from ?? _appSettings.EmailFrom));
-            email.To.Add(MailboxAddress.Parse(to));
-            email.Subject = subject;
-            email.Body = new TextPart(TextFormat.Html) { Text = html };
+            if (string.IsNullOrEmpty(to))
+            {
+                throw new ArgumentException("The 'to' parameter cannot be null or empty.", nameof(to));
+            }
 
-            // send email
-            using var smtp = new SmtpClient();
-            smtp.Connect(_appSettings.SmtpHost, _appSettings.SmtpPort, SecureSocketOptions.StartTls);
-            smtp.Authenticate(_appSettings.SmtpUser, _appSettings.SmtpPass);
-            smtp.Send(email);
-            smtp.Disconnect(true);
+            if (string.IsNullOrEmpty(subject))
+            {
+                throw new ArgumentException("The 'subject' parameter cannot be null or empty.", nameof(subject));
+            }
+
+            var msg = new SendGridMessage
+            {
+                From = new EmailAddress(from ?? "ngocvlqt1995@gmail.com", "Tuan Ngoc"),
+                Subject = subject
+            };
+
+            msg.AddContent(MimeType.Html, html);
+            msg.AddTo(new EmailAddress(to));
+
+            try
+            {
+                var response = await _sendGridClient.SendEmailAsync(msg).ConfigureAwait(false);
+
+                // Log or handle the response as needed
+                Console.WriteLine($"SendGrid response: {response.StatusCode}");
+                Console.WriteLine($"Headers: {response.Headers}");
+                Console.WriteLine($"Body: {response.Body}");
+            }
+            catch (Exception ex)
+            {
+                // Log or handle the exception
+                Console.WriteLine($"Error sending email: {ex.Message}");
+                throw; // Rethrow the exception if needed
+            }
         }
     }
 }

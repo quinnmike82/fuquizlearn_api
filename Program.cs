@@ -2,6 +2,7 @@ using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Services;
 using Microsoft.EntityFrameworkCore;
+using SendGrid.Extensions.DependencyInjection;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,10 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
+    services.AddSendGrid(options =>
+    {
+        options.ApiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+    });
 }
 
 var app = builder.Build();
