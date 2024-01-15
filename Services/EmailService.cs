@@ -33,7 +33,7 @@ namespace fuquizlearn_api.Services
 
             var msg = new SendGridMessage
             {
-                From = new EmailAddress(from ?? "ngocvlqt1995@gmail.com", "Tuan Ngoc"),
+                From = new EmailAddress(from ?? "ngocvlqt1995@gmail.com", "QuizLearn"),
                 Subject = subject
             };
 
