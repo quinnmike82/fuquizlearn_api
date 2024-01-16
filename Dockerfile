@@ -19,9 +19,6 @@ WORKDIR /app
 # Copy the published application
 COPY --from=build /app/out .
 
-# Set the environment variable to configure the app to listen on ports 5000 and 5001
-ENV ASPNETCORE_URLS=http://+:5000;https://+:5001
-
 # Expose the ports the app will run on
 EXPOSE 5000
 EXPOSE 5001
