@@ -6,13 +6,14 @@ namespace fuquizlearn_api.Models.Accounts
     public class CreateRequest
     {
         [Required]
-        public string Title { get; set; }
+        public string Username { get; set; }
 
         [Required]
-        public string FirstName { get; set; }
+        public string FullName { get; set; }
 
         [Required]
-        public string LastName { get; set; }
+        [DataType(DataType.DateTime)]
+        public DateTime Dob { get; set; }
 
         [Required]
         [EnumDataType(typeof(Role))]

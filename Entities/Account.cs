@@ -5,12 +5,13 @@ namespace fuquizlearn_api.Entities
     public class Account
     {
         public int Id { get; set; }
-        public string Title { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string Username { get; set; }
+        public string FullName { get; set; }
         public string Email { get; set; }
+        public string Avatar { get; set; }
+        public DateTime Dob { get; set; }
+        public int useAICount { get; set; }
         public string PasswordHash { get; set; }
-        public bool AcceptTerms { get; set; }
         public Role Role { get; set; }
         public string? VerificationToken { get; set; }
         public DateTime? Verified { get; set; }
@@ -21,6 +22,7 @@ namespace fuquizlearn_api.Entities
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
         public List<RefreshToken> RefreshTokens { get; set; }
+        public List<int>? FavoriteBankIds { get; set; }
 
         public bool OwnsToken(string token)
         {

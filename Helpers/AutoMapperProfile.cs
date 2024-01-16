@@ -15,7 +15,20 @@ namespace fuquizlearn_api.Helpers
 
             CreateMap<RegisterRequest, Account>();
 
-            CreateMap<CreateRequest, Account>();
+            CreateMap<CreateRequest, Account>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        // ignore null & empty string properties
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        // ignore avatar
+                        if(prop.GetType() == typeof(IFormFile)) return false;
+
+                        return true;
+                    }
+                ));
 
             CreateMap<UpdateRequest, Account>()
                 .ForAllMembers(x => x.Condition(

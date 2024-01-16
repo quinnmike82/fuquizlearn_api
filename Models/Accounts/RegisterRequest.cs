@@ -1,17 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using fuquizlearn_api.Entities;
+using System.ComponentModel.DataAnnotations;
 
 namespace fuquizlearn_api.Models.Accounts
 {
     public class RegisterRequest
     {
         [Required]
-        public string Title { get; set; }
+        public string Username { get; set; }
 
         [Required]
-        public string FirstName { get; set; }
+        public string FullName { get; set; }
 
         [Required]
-        public string LastName { get; set; }
+        [DataType(DataType.DateTime)]
+        public DateTime Dob { get; set; }
+
+        [DataType(DataType.Upload)]
+        public IFormFile Avatar { get; set; }
+
+        [Required]
+        [EnumDataType(typeof(Role))]
+        public string Role { get; set; }
 
         [Required]
         [EmailAddress]
@@ -24,8 +33,5 @@ namespace fuquizlearn_api.Models.Accounts
         [Required]
         [Compare("Password")]
         public string ConfirmPassword { get; set; }
-
-        [Range(typeof(bool), "true", "true")]
-        public bool AcceptTerms { get; set; }
     }
 }

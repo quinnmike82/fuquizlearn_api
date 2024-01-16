@@ -55,7 +55,7 @@ namespace fuquizlearn_api.Services
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
         {
-            var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
+            var account = _context.Accounts.SingleOrDefault(x => x.Email == model.EmailOrUsername || x.Username == model.EmailOrUsername);
 
             // validate
             if (account == null || !account.IsVerified || !BC.Verify(model.Password, account.PasswordHash))
@@ -138,8 +138,19 @@ namespace fuquizlearn_api.Services
             {
                 // send already registered error in email to prevent account enumeration
                 sendAlreadyRegisteredEmail(model.Email, origin);
-                return;
+                throw new AppException("Email is already existed");
             }
+            if (_context.Accounts.Any(x => x.Username == model.Username))
+            {
+                // send already registered error in email to prevent account enumeration
+                sendAlreadyRegisteredEmail(model.Email, origin);
+                throw new AppException("Email is already existed");
+            }
+            if(model.Avatar != null)
+            {
+                // upload image and save image url
+            }
+
 
             // map model to new account object
             var account = _mapper.Map<Account>(model);
@@ -229,6 +240,8 @@ namespace fuquizlearn_api.Services
             // validate
             if (_context.Accounts.Any(x => x.Email == model.Email))
                 throw new AppException($"Email '{model.Email}' is already registered");
+            if (_context.Accounts.Any(x => x.Username == model.Username))
+                throw new AppException($"Username '{model.Username}' is already registered");
 
             // map model to new account object
             var account = _mapper.Map<Account>(model);
