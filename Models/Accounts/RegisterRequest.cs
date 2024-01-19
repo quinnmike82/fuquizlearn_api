@@ -12,15 +12,11 @@ namespace fuquizlearn_api.Models.Accounts
         public string FullName { get; set; }
 
         [Required]
-        [DataType(DataType.DateTime)]
+        [DataType(DataType.Date)]
         public DateTime Dob { get; set; }
 
         [DataType(DataType.Upload)]
-        public IFormFile Avatar { get; set; }
-
-        [Required]
-        [EnumDataType(typeof(Role))]
-        public string Role { get; set; }
+        public IFormFile? Avatar { get; set; }
 
         [Required]
         [EmailAddress]

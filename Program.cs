@@ -2,6 +2,8 @@ using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
 using System.Text.Json.Serialization;
 
@@ -20,7 +22,33 @@ var builder = WebApplication.CreateBuilder(args);
         x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
     services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-    services.AddSwaggerGen();
+    services.AddSwaggerGen(option =>
+    {
+        option.SwaggerDoc("v1", new OpenApiInfo { Title = "FuQuizLearn API", Version = "v1" });
+        option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Description = "Please enter a valid token",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
+        option.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type=ReferenceType.SecurityScheme,
+                        Id="Bearer"
+                    }
+                },
+                new string[]{}
+            }
+        });
+    });
 
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));

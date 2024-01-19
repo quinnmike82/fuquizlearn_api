@@ -38,6 +38,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("revoke-token")]
         public IActionResult RevokeToken(RevokeTokenRequest model)
         {
@@ -57,7 +58,7 @@ namespace fuquizlearn_api.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public IActionResult Register(RegisterRequest model)
+        public IActionResult Register([FromForm] RegisterRequest model)
         {
             _accountService.Register(model, Request.Headers["origin"]);
             return Ok(new { message = "Registration successful, please check your email for verification instructions" });
@@ -95,7 +96,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(new { message = "Password reset successful, you can now login" });
         }
 
-        [Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         [HttpGet]
         public ActionResult<IEnumerable<AccountResponse>> GetAll()
         {
@@ -103,6 +104,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(accounts);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id:int}")]
         public ActionResult<AccountResponse> GetById(int id)
         {
@@ -114,7 +116,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(account);
         }
 
-        [Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         [HttpPost]
         public ActionResult<AccountResponse> Create(CreateRequest model)
         {
@@ -122,6 +124,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(account);
         }
 
+        [AllowAnonymous]
         [HttpPut("{id:int}")]
         public ActionResult<AccountResponse> Update(int id, UpdateRequest model)
         {
@@ -137,6 +140,7 @@ namespace fuquizlearn_api.Controllers
             return Ok(account);
         }
 
+        [AllowAnonymous]
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {

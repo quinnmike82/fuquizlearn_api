@@ -5,49 +5,25 @@ namespace fuquizlearn_api.Models.Accounts
 {
     public class UpdateRequest
     {
-        private string _password;
-        private string _confirmPassword;
-        private string _role;
-        private string _email;
+        public string? Username { get; set; }
+        public string? FullName { get; set; }
 
-        public string Username { get; set; }
-        public string FullName { get; set; }
-        public DateTime Dob { get; set; }
+        [DataType(DataType.Date)]
+        public DateTime? Dob { get; set; }
+
+        [DataType(DataType.Upload)]
+        public IFormFile? Avatar { get; set; }
 
         [EnumDataType(typeof(Role))]
-        public string Role
-        {
-            get => _role;
-            set => _role = replaceEmptyWithNull(value);
-        }
+        public string? Role { get; set; }
 
         [EmailAddress]
-        public string Email
-        {
-            get => _email;
-            set => _email = replaceEmptyWithNull(value);
-        }
+        public string? Email { get; set; }
 
         [MinLength(6)]
-        public string Password
-        {
-            get => _password;
-            set => _password = replaceEmptyWithNull(value);
-        }
+        public string? Password { get; set; }
 
         [Compare("Password")]
-        public string ConfirmPassword
-        {
-            get => _confirmPassword;
-            set => _confirmPassword = replaceEmptyWithNull(value);
-        }
-
-        // helpers
-
-        private string replaceEmptyWithNull(string value)
-        {
-            // replace empty string with null to make field optional
-            return string.IsNullOrEmpty(value) ? null : value;
-        }
+        public string? ConfirmPassword { get; set; }
     }
 }

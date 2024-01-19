@@ -55,7 +55,7 @@ namespace fuquizlearn_api.Services
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
         {
-            var account = _context.Accounts.SingleOrDefault(x => x.Email == model.EmailOrUsername || x.Username == model.EmailOrUsername);
+            var account = _context.Accounts.FirstOrDefault(x => x.Email == model.EmailOrUsername || x.Username == model.EmailOrUsername);
 
             // validate
             if (account == null || !account.IsVerified || !BC.Verify(model.Password, account.PasswordHash))
