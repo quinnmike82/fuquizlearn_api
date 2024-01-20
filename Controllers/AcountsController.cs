@@ -1,4 +1,5 @@
 ﻿using fuquizlearn_api.Entities;
+using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -109,8 +110,8 @@ namespace fuquizlearn_api.Controllers
         public ActionResult<AccountResponse> GetById(int id)
         {
             // users can get their own account and admins can get any account
-            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });
+/*            if (id != Account.Id && Account.Role != Role.Admin)
+                return Unauthorized(new { message = "Unauthorized" });*/
 
             var account = _accountService.GetById(id);
             return Ok(account);
@@ -129,8 +130,8 @@ namespace fuquizlearn_api.Controllers
         public ActionResult<AccountResponse> Update(int id, UpdateRequest model)
         {
             // users can update their own account and admins can update any account
-            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });
+/*            if (id != Account.Id && Account.Role != Role.Admin)
+                return Unauthorized(new { message = "Unauthorized" });*/
 
             // only admins can update role
             if (Account.Role != Role.Admin)
@@ -145,11 +146,41 @@ namespace fuquizlearn_api.Controllers
         public IActionResult Delete(int id)
         {
             // users can delete their own account and admins can delete any account
-            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });
+/*            if (id != Account.Id && Account.Role != Role.Admin)
+                return Unauthorized(new { message = "Unauthorized" });*/
 
             _accountService.Delete(id);
             return Ok(new { message = "Account deleted successfully" });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("ban/{id:int}")]
+        public IActionResult BanAccount(int id)
+        {
+            try
+            {
+                _accountService.BanAccount(id, Request.Headers["origin"]);
+                return Ok(new { message = "Account banned successfully" });
+            }
+            catch (AppException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("warning/{id:int}")]
+        public IActionResult WarningAccount(int id)
+        {
+            try
+            {
+                _accountService.WarningAccount(id, Request.Headers["origin"]);
+                return Ok(new { message = "Account warned successfully" });
+            }
+            catch (AppException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // helper methods

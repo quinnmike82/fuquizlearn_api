@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using fuquizlearn_api.Authorization;
+using System.Reflection;
 
 namespace fuquizlearn_api.Services
 {
@@ -29,6 +30,8 @@ namespace fuquizlearn_api.Services
         AccountResponse Create(CreateRequest model);
         AccountResponse Update(int id, UpdateRequest model);
         void Delete(int id);
+        void BanAccount(int id, string origin);
+        void WarningAccount(int id, string origin);
     }
 
     public class AccountService : IAccountService
@@ -385,31 +388,47 @@ namespace fuquizlearn_api.Services
             token.ReplacedByToken = replacedByToken;
         }
 
+        public void BanAccount(int accountId, string origin)
+        {
+            var account = getAccount(accountId);
+
+            // Update the database to mark the account as banned
+            account.isBan = DateTime.UtcNow;
+            _context.Accounts.Update(account);
+            _context.SaveChanges();
+
+            // Send the ban email
+            SendBanEmail(account, origin);
+        }
+
+        public void WarningAccount(int accountId, string origin)
+        {
+            var account = getAccount(accountId);
+
+            // Update the database to mark the account with a warning
+            account.isWarning = DateTime.UtcNow;
+            _context.Accounts.Update(account);
+            _context.SaveChanges();
+
+            // Send the warning email
+            SendWarningEmail(account, origin);
+        }
+
         private void sendVerificationEmail(Account account, string origin)
         {
-            string message;
-            if (!string.IsNullOrEmpty(origin))
-            {
-                // origin exists if request sent from browser single page app (e.g. Angular or React)
-                // so send link to verify via single page app
-                var verifyUrl = $"{origin}/account/verify-email?token={account.VerificationToken}";
-                message = $@"<p>Please click the below link to verify your email address:</p>
-                            <p><a href=""{verifyUrl}"">{verifyUrl}</a></p>";
-            }
-            else
-            {
-                // origin missing if request sent directly to api (e.g. from Postman)
-                // so send instructions to verify directly with api
-                message = $@"<p>Please use the below token to verify your email address with the <code>/accounts/verify-email</code> api route:</p>
-                            <p><code>{account.VerificationToken}</code></p>";
-            }
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "registration-code.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+            htmlContent = htmlContent.Replace("{CODE}", account.VerificationToken);
+            htmlContent = htmlContent.Replace("{link}", "FRONT END");
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
 
             _emailService.SendAsync(
                 to: account.Email,
-                subject: "Sign-up Verification API - Verify Email",
-                html: $@"<h4>Verify Email</h4>
-                        <p>Thanks for registering!</p>
-                        {message}"
+                subject: "QUIZLEARN - Registration",
+                html: htmlContent
             );
         }
 
@@ -423,7 +442,7 @@ namespace fuquizlearn_api.Services
 
             _emailService.SendAsync(
                 to: email,
-                subject: "Sign-up Verification API - Email Already Registered",
+                subject: "QUIZLEARN - Email Already Registered",
                 html: $@"<h4>Email Already Registered</h4>
                         <p>Your email <strong>{email}</strong> is already registered.</p>
                         {message}"
@@ -432,24 +451,73 @@ namespace fuquizlearn_api.Services
 
         private void sendPasswordResetEmail(Account account, string origin)
         {
-            string message;
-            if (!string.IsNullOrEmpty(origin))
-            {
-                var resetUrl = $"{origin}/account/reset-password?token={account.ResetToken}";
-                message = $@"<p>Please click the below link to reset your password, the link will be valid for 1 day:</p>
-                            <p><a href=""{resetUrl}"">{resetUrl}</a></p>";
-            }
-            else
-            {
-                message = $@"<p>Please use the below token to reset your password with the <code>/accounts/reset-password</code> api route:</p>
-                            <p><code>{account.ResetToken}</code></p>";
-            }
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "forgot-password.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+            htmlContent = htmlContent.Replace("{CODE}", account.VerificationToken);
+            htmlContent = htmlContent.Replace("{link}", "FRONT END");
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
 
             _emailService.SendAsync(
                 to: account.Email,
-                subject: "Sign-up Verification API - Reset Password",
-                html: $@"<h4>Reset Password Email</h4>
-                        {message}"
+                subject: "QUIZLEARN - Reset Password",
+                html: htmlContent
+            );
+        }
+
+        private void SendBanEmail(Account account, string origin)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "ban.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+            htmlContent = htmlContent.Replace("{link}", "FRONT END");
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+            _emailService.SendAsync(
+                to: account.Email,
+                subject: "QUIZLEARN - GOODBYE",
+                html: htmlContent
+            );
+        }
+
+        private void SendInviteEmail(Account from,Account to, string classroomName, string origin)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "invitation.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{user-email}", from.Email);
+            htmlContent = htmlContent.Replace("{user-name}", to.FullName);
+            htmlContent = htmlContent.Replace("{classroom-name}", classroomName);
+            htmlContent = htmlContent.Replace("{link}", "FRONT END");
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+            _emailService.SendAsync(
+                to: to.Email,
+                subject: "QUIZLEARN - CLASSROOM INVITATION ",
+                html: htmlContent
+            );
+        }
+
+        private void SendWarningEmail(Account account, string origin)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "waning.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+            htmlContent = htmlContent.Replace("{date}", DateTime.Now.ToString("yyyy-MM-dd"));
+            htmlContent = htmlContent.Replace("{link}", "FRONT END");
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+            _emailService.SendAsync(
+                to: account.Email,
+                subject: "QUIZLEARN - VIOLATION RULES WARNING",
+                html: htmlContent
             );
         }
     }
