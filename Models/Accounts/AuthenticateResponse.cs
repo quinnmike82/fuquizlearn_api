@@ -18,7 +18,6 @@ namespace fuquizlearn_api.Models.Accounts
         public bool IsVerified { get; set; }
         public string JwtToken { get; set; }
 
-        [JsonIgnore]
         public string RefreshToken { get; set; }
     }
 }
