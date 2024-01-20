@@ -23,6 +23,8 @@ namespace fuquizlearn_api.Entities
         public DateTime? Updated { get; set; }
         public List<RefreshToken> RefreshTokens { get; set; }
         public List<int>? FavoriteBankIds { get; set; }
+        public DateTime? isBan { get; set; } = null;
+        public DateTime? isWarning { get; set; } = null;
 
         public bool OwnsToken(string token)
         {
