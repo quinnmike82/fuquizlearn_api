@@ -2,29 +2,28 @@
 using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace fuquizlearn_api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
+    [Route("auth")]
     [ApiController]
-    public class AuthenController : BaseController
+    public class AuthController : BaseController
     {
         private readonly IAccountService _accountService;
 
-        public AuthenController(IAccountService accountService)
+        public AuthController(IAccountService accountService)
         {
             _accountService = accountService;
         }
 
         [AllowAnonymous]
-        [HttpPost("authenticate")]
+        [HttpPost("login")]
         public ActionResult<AuthenticateResponse> Authenticate(AuthenticateRequest model)
         {
             var response = _accountService.Authenticate(model, ipAddress());
-            setTokenCookie(response.RefreshToken);
+            setTokenCookie(response.RefreshToken.token);
             return Ok(response);
         }
 
@@ -37,7 +36,7 @@ namespace fuquizlearn_api.Controllers
 
             return Ok(new
             {
-                JwtToken = response.JwtToken,
+                JwtToken = response.AccessToken,
                 RefreshToken = response.RefreshToken
             });
         }

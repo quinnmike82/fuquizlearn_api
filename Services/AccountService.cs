@@ -1,17 +1,17 @@
 ﻿
+using AutoMapper;
+using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
-using AutoMapper;
-using BC = BCrypt.Net.BCrypt;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using fuquizlearn_api.Authorization;
-using System.Reflection;
+using BC = BCrypt.Net.BCrypt;
 
 namespace fuquizlearn_api.Services
 {
@@ -41,19 +41,25 @@ namespace fuquizlearn_api.Services
         private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
         private readonly IEmailService _emailService;
+        private readonly IHelperEncryptService _helperEncryptService;
+        private readonly IHelperDateService _helperDateService;
 
         public AccountService(
             DataContext context,
             IJwtUtils jwtUtils,
             IMapper mapper,
             IOptions<AppSettings> appSettings,
-            IEmailService emailService)
+            IEmailService emailService,
+            IHelperDateService helperDateService,
+            IHelperEncryptService helperEncryptService)
         {
             _context = context;
             _jwtUtils = jwtUtils;
             _mapper = mapper;
             _appSettings = appSettings.Value;
             _emailService = emailService;
+            _helperEncryptService = helperEncryptService;
+            _helperDateService = helperDateService;
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -61,12 +67,20 @@ namespace fuquizlearn_api.Services
             var account = _context.Accounts.FirstOrDefault(x => x.Email == model.EmailOrUsername || x.Username == model.EmailOrUsername);
 
             // validate
-            if (account == null || !account.IsVerified || !BC.Verify(model.Password, account.PasswordHash))
+            if (account == null || !BC.Verify(model.Password, account.PasswordHash))
                 throw new AppException("Email or password is incorrect");
 
             // authentication successful so generate jwt and refresh tokens
-            var jwtToken = _jwtUtils.GenerateJwtToken(account);
+            var jwtToken = _helperEncryptService.JwtEncrypt(account);
+            var jwtExpires = _helperDateService.ConvertToUnixTimestamp(_helperEncryptService.JwtDecrypt(jwtToken).ValidTo);
             var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
+            var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
+
+            if (refreshToken == null || jwtToken == null)
+            {
+                throw new AppException("Error when issues token");
+            }
+
             account.RefreshTokens.Add(refreshToken);
 
             // remove old refresh tokens from account
@@ -77,8 +91,16 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
 
             var response = _mapper.Map<AuthenticateResponse>(account);
-            response.JwtToken = jwtToken;
-            response.RefreshToken = refreshToken.Token;
+            response.AccessToken = new Token
+            {
+                token = jwtToken,
+                expiredAt = jwtExpires
+            };
+            response.RefreshToken = new Token
+            {
+                token = refreshToken.Token,
+                expiredAt = refreshTokenExpires,
+            };
             return response;
         }
 
@@ -111,12 +133,22 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
 
             // generate new jwt
-            var jwtToken = _jwtUtils.GenerateJwtToken(account);
+            var jwtToken = _helperEncryptService.JwtEncrypt(account);
+            var jwtExpires = _helperDateService.ConvertToUnixTimestamp(_helperEncryptService.JwtDecrypt(jwtToken).ValidTo);
+            var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
 
             // return data in authenticate response object
             var response = _mapper.Map<AuthenticateResponse>(account);
-            response.JwtToken = jwtToken;
-            response.RefreshToken = newRefreshToken.Token;
+            response.AccessToken = new Token
+            {
+                token = jwtToken,
+                expiredAt = jwtExpires
+            };
+            response.RefreshToken = new Token
+            {
+                token = refreshToken.Token,
+                expiredAt = refreshTokenExpires,
+            };
             return response;
         }
 
@@ -149,7 +181,7 @@ namespace fuquizlearn_api.Services
                 sendAlreadyRegisteredEmail(model.Email, origin);
                 throw new AppException("Email is already existed");
             }
-            if(model.Avatar != null)
+            if (model.Avatar != null)
             {
                 // upload image and save image url
             }
@@ -316,7 +348,7 @@ namespace fuquizlearn_api.Services
         private string generateJwtToken(Account account)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(_appSettings.AccessTokenSecret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", account.Id.ToString()) }),
@@ -484,7 +516,7 @@ namespace fuquizlearn_api.Services
             );
         }
 
-        private void SendInviteEmail(Account from,Account to, string classroomName, string origin)
+        private void SendInviteEmail(Account from, Account to, string classroomName, string origin)
         {
             var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var projectDirectory = Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs

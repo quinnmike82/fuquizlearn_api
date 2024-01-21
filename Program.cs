@@ -2,7 +2,6 @@ using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
 using System.Text.Json.Serialization;
@@ -55,6 +54,8 @@ var builder = WebApplication.CreateBuilder(args);
 
     // configure DI for application services
     services.AddScoped<IJwtUtils, JwtUtils>();
+    services.AddScoped<IHelperEncryptService, HelperEncryptService>();
+    services.AddScoped<IHelperDateService, HelperDateService>();
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
     services.AddSendGrid(options =>
@@ -75,6 +76,7 @@ using (var scope = app.Services.CreateScope())
 // configure HTTP request pipeline
 {
     // generated swagger json and swagger ui middleware
+    string prefix = Environment.GetEnvironmentVariable("ASPNETCORE_PATHBASE") ?? "/api";
     app.UseSwagger();
     app.UseSwaggerUI(x => x.SwaggerEndpoint("/swagger/v1/swagger.json", ".NET Sign-up and Verification API"));
 
@@ -90,6 +92,7 @@ using (var scope = app.Services.CreateScope())
 
     // custom jwt auth middleware
     app.UseMiddleware<JwtMiddleware>();
+    app.UsePathBase(prefix);
 
     app.MapControllers();
 }
