@@ -56,6 +56,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IHelperEncryptService, HelperEncryptService>();
     services.AddScoped<IHelperDateService, HelperDateService>();
+    services.AddScoped<IGoogleService, GoogleService>();
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
     services.AddSendGrid(options =>

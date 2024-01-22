@@ -28,6 +28,16 @@ namespace fuquizlearn_api.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("login/google")]
+        public async Task<ActionResult<AuthenticateResponse>> GoogleAuthenticateAsync(LoginGoogleRequest model)
+        {
+            var response = await _accountService.GoogleAuthenticate(model, ipAddress());
+            setTokenCookie(response.RefreshToken.token);
+            return Ok(response);
+        }
+
+
+        [AllowAnonymous]
         [HttpPost("refresh-token")]
         public ActionResult<AuthenticateResponse> RefreshToken(string token)
         {

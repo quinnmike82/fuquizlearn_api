@@ -18,6 +18,7 @@ namespace fuquizlearn_api.Services
     public interface IAccountService
     {
         AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress);
+        Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress);
         AuthenticateResponse RefreshToken(string token, string ipAddress);
         void RevokeToken(string token, string ipAddress);
         void Register(RegisterRequest model, string origin);
@@ -25,6 +26,7 @@ namespace fuquizlearn_api.Services
         void ForgotPassword(ForgotPasswordRequest model, string origin);
         void ValidateResetToken(ValidateResetTokenRequest model);
         void ResetPassword(ResetPasswordRequest model);
+        Account GetByEmail(string email);
         IEnumerable<AccountResponse> GetAll();
         AccountResponse GetById(int id);
         AccountResponse Create(CreateRequest model);
@@ -43,6 +45,7 @@ namespace fuquizlearn_api.Services
         private readonly IEmailService _emailService;
         private readonly IHelperEncryptService _helperEncryptService;
         private readonly IHelperDateService _helperDateService;
+        private readonly IGoogleService _googleService;
 
         public AccountService(
             DataContext context,
@@ -51,7 +54,8 @@ namespace fuquizlearn_api.Services
             IOptions<AppSettings> appSettings,
             IEmailService emailService,
             IHelperDateService helperDateService,
-            IHelperEncryptService helperEncryptService)
+            IHelperEncryptService helperEncryptService,
+                IGoogleService googleService)
         {
             _context = context;
             _jwtUtils = jwtUtils;
@@ -60,6 +64,7 @@ namespace fuquizlearn_api.Services
             _emailService = emailService;
             _helperEncryptService = helperEncryptService;
             _helperDateService = helperDateService;
+            _googleService = googleService;
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -102,6 +107,45 @@ namespace fuquizlearn_api.Services
                 expiredAt = refreshTokenExpires,
             };
             return response;
+        }
+        public async Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress)
+        {
+            var email = await _googleService.GetEmailByToken(model.Token) ?? throw new AppException("Email is invalid");
+            var account = GetByEmail(email) ?? throw new AppException("Account not found");
+
+            // authentication successful so generate jwt and refresh tokens
+            var jwtToken = _helperEncryptService.JwtEncrypt(account);
+            var jwtExpires = _helperDateService.ConvertToUnixTimestamp(_helperEncryptService.JwtDecrypt(jwtToken).ValidTo);
+            var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
+            var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
+
+            if (refreshToken == null || jwtToken == null)
+            {
+                throw new AppException("Error when issues token");
+            }
+
+            account.RefreshTokens.Add(refreshToken);
+
+            // remove old refresh tokens from account
+            removeOldRefreshTokens(account);
+
+            // save changes to db
+            _context.Update(account);
+            _context.SaveChanges();
+
+            var response = _mapper.Map<AuthenticateResponse>(account);
+            response.AccessToken = new Token
+            {
+                token = jwtToken,
+                expiredAt = jwtExpires
+            };
+            response.RefreshToken = new Token
+            {
+                token = refreshToken.Token,
+                expiredAt = refreshTokenExpires,
+            };
+            return response;
+
         }
 
         public AuthenticateResponse RefreshToken(string token, string ipAddress)
@@ -551,6 +595,12 @@ namespace fuquizlearn_api.Services
                 subject: "QUIZLEARN - VIOLATION RULES WARNING",
                 html: htmlContent
             );
+        }
+
+        public Account GetByEmail(string email)
+        {
+            Account? account = _context.Accounts.FirstOrDefault(x => x.Email == email);
+            return account ?? throw new KeyNotFoundException("Account not found");
         }
     }
 }
