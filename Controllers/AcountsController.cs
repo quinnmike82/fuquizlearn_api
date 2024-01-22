@@ -3,7 +3,6 @@ using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace fuquizlearn_api.Controllers
@@ -33,8 +32,8 @@ namespace fuquizlearn_api.Controllers
         public ActionResult<AccountResponse> GetById(int id)
         {
             // users can get their own account and admins can get any account
-/*            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });*/
+            /*            if (id != Account.Id && Account.Role != Role.Admin)
+                            return Unauthorized(new { message = "Unauthorized" });*/
 
             var account = _accountService.GetById(id);
             return Ok(account);
@@ -53,8 +52,8 @@ namespace fuquizlearn_api.Controllers
         public ActionResult<AccountResponse> Update(int id, UpdateRequest model)
         {
             // users can update their own account and admins can update any account
-/*            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });*/
+            /*            if (id != Account.Id && Account.Role != Role.Admin)
+                            return Unauthorized(new { message = "Unauthorized" });*/
 
             // only admins can update role
             if (Account.Role != Role.Admin)
@@ -69,8 +68,8 @@ namespace fuquizlearn_api.Controllers
         public IActionResult Delete(int id)
         {
             // users can delete their own account and admins can delete any account
-/*            if (id != Account.Id && Account.Role != Role.Admin)
-                return Unauthorized(new { message = "Unauthorized" });*/
+            /*            if (id != Account.Id && Account.Role != Role.Admin)
+                            return Unauthorized(new { message = "Unauthorized" });*/
 
             _accountService.Delete(id);
             return Ok(new { message = "Account deleted successfully" });
@@ -105,6 +104,24 @@ namespace fuquizlearn_api.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("profile")]
+        public IActionResult GetUserProfile()
+        {
+            try
+            {
+                var id = Account.Id;
+                var user = _accountService.GetById(id);
+
+                return Ok(user);
+
+            }
+            catch (AppException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
 
         // helper methods
 
