@@ -23,9 +23,24 @@ namespace fuquizlearn_api.Authorization
 
             // authorization
             var account = (Account)context.HttpContext.Items["Account"];
-            if (account == null || (_roles.Any() && !_roles.Contains(account.Role)))
+
+            if (account != null)
+
             {
+                if (!account.IsVerified)
+                {
+
+                    context.Result = new JsonResult(new { message = "Account is not verified" }) { StatusCode = StatusCodes.Status401Unauthorized };
+                }
+                else if ((_roles.Any() && !_roles.Contains(account.Role)))
+                {
+                    context.Result = new JsonResult(new { message = "Insufficient permission" }) { StatusCode = StatusCodes.Status401Unauthorized };
+                }
                 // not logged in or role not authorized
+            }
+            else
+            {
+
                 context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };
             }
         }

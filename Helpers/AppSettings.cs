@@ -2,9 +2,10 @@
 {
     public class AppSettings
     {
-        public string Secret { get; set; }
+        public string AccessTokenSecret { get; set; }
+        public int AccessTokenTTL { get; set; } = 24; //as hour
 
-        public int RefreshTokenTTL { get; set; }
+        public int RefreshTokenTTL { get; set; } = 30; //as day
 
         public string EmailFrom { get; set; }
         public string SmtpHost { get; set; }
