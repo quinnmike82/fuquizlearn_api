@@ -1,10 +1,10 @@
+using System.Text.Json.Serialization;
 using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,11 +40,11 @@ var builder = WebApplication.CreateBuilder(args);
                 {
                     Reference = new OpenApiReference
                     {
-                        Type=ReferenceType.SecurityScheme,
-                        Id="Bearer"
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
                     }
                 },
-                new string[]{}
+                new string[] { }
             }
         });
     });
@@ -56,6 +56,8 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IHelperEncryptService, HelperEncryptService>();
     services.AddScoped<IHelperDateService, HelperDateService>();
+    services.AddScoped<IHelperCryptoService, HelperCryptoService>();
+    services.AddScoped<IHelperFrontEnd, HelperFrontEnd>();
     services.AddScoped<IGoogleService, GoogleService>();
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
@@ -78,7 +80,7 @@ using (var scope = app.Services.CreateScope())
 // configure HTTP request pipeline
 {
     // generated swagger json and swagger ui middleware
-    string prefix = Environment.GetEnvironmentVariable("ASPNETCORE_PATHBASE") ?? "/api";
+    var prefix = Environment.GetEnvironmentVariable("ASPNETCORE_PATHBASE") ?? "/api";
     app.UseSwagger();
     app.UseSwaggerUI(x => x.SwaggerEndpoint("/swagger/v1/swagger.json", ".NET Sign-up and Verification API"));
 

@@ -1,114 +1,149 @@
-﻿using fuquizlearn_api.Entities;
-using fuquizlearn_api.Helpers;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using fuquizlearn_api.Entities;
+using fuquizlearn_api.Helpers;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
-namespace fuquizlearn_api.Services
+namespace fuquizlearn_api.Services;
+
+public interface IHelperEncryptService
 {
-    public interface IHelperEncryptService
-    {
-        string JwtEncrypt(Account payload, JwtPayload? options = null);
-        JwtSecurityToken? JwtDecrypt(string token);
-        bool JwtVerify(string? token);
+    string AccessTokenEncrypt(Account payload, JwtPayload? options = null);
+    JwtSecurityToken? AccessTokenDecrypt(string token);
+    bool AccessTokenVerify(string? token);
 
-        RefreshToken IssuesRefreshToken(string ipAddress);
+    string JwtEncrypt(string key, ClaimsIdentity subject,
+        long exp);
+
+    JwtSecurityToken JwtDecrypt(string key, string token);
+    RefreshToken IssuesRefreshToken(string ipAddress);
+}
+
+public class HelperEncryptService : IHelperEncryptService
+{
+    private readonly int _accessTokenExpires;
+    private readonly string _accessTokenSecret;
+    private readonly AppSettings _appSettings;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly int _refreshTokenExpires;
+
+    public HelperEncryptService(IOptions<AppSettings> appSettings)
+    {
+        _appSettings = appSettings.Value;
+
+        _accessTokenSecret = _appSettings.AccessTokenSecret;
+        _accessTokenExpires = _appSettings.AccessTokenTTL;
+        _refreshTokenExpires = _appSettings.RefreshTokenTTL;
+
+        _jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
     }
-    public class HelperEncryptService : IHelperEncryptService
+
+    public JwtSecurityToken? AccessTokenDecrypt(string token)
     {
-        private readonly AppSettings _appSettings;
-        private readonly string _accessTokenSecret;
-        private readonly int _accessTokenExpires;
-        private readonly int _refreshTokenExpires;
-        private readonly JwtSecurityTokenHandler jwtSecurityTokenHandler;
+        var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
 
-        public HelperEncryptService(IOptions<AppSettings> appSettings)
+        var tokenValidationParameters = new TokenValidationParameters
         {
-            _appSettings = appSettings.Value;
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
 
-            _accessTokenSecret = _appSettings.AccessTokenSecret;
-            _accessTokenExpires = _appSettings.AccessTokenTTL;
-            _refreshTokenExpires = _appSettings.RefreshTokenTTL;
+        _jwtSecurityTokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
+        var jwtToken = validatedToken as JwtSecurityToken;
 
-            jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-        }
+        return jwtToken;
+    }
 
-        public JwtSecurityToken? JwtDecrypt(string token)
+    public string AccessTokenEncrypt(Account account, JwtPayload? options = null)
+    {
+        var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
+            Subject = new ClaimsIdentity(new[] { new Claim("id", account.Id.ToString()) }),
+            Expires = DateTime.UtcNow.AddDays(_accessTokenExpires),
+            IssuedAt = options?.IssuedAt,
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
 
-            var tokenValidationParameters = new TokenValidationParameters()
+        var token = _jwtSecurityTokenHandler.CreateToken(tokenDescriptor);
+        return _jwtSecurityTokenHandler.WriteToken(token);
+    }
+
+    public bool AccessTokenVerify(string? token)
+    {
+        if (token.IsNullOrEmpty()) return false;
+
+        var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
+
+        try
+        {
+            _jwtSecurityTokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = false,
                 ValidateAudience = false
-            };
-
-            jwtSecurityTokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
-            var jwtToken = validatedToken as JwtSecurityToken;
-
-            return jwtToken;
+            }, out var validatedToken);
+            return true;
         }
-
-        public string JwtEncrypt(Account account, JwtPayload? options = null)
+        catch
         {
-            var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
-
-            var tokenDescriptor = new SecurityTokenDescriptor()
-            {
-                Subject = new ClaimsIdentity(new[] { new Claim("id", account.Id.ToString()) }),
-                Expires = DateTime.UtcNow.AddDays(_accessTokenExpires),
-                IssuedAt = options?.IssuedAt,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = jwtSecurityTokenHandler.CreateToken(tokenDescriptor);
-            return jwtSecurityTokenHandler.WriteToken(token);
+            return false;
         }
+    }
 
-        public bool JwtVerify(string? token)
+    public JwtSecurityToken JwtDecrypt(string key, string token)
+    {
+        var keyByte = Encoding.ASCII.GetBytes(key);
+
+        var tokenValidationParameters = new TokenValidationParameters
         {
-            if (token.IsNullOrEmpty())
-            {
-                return false;
-            }
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(keyByte),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
 
-            var key = Encoding.ASCII.GetBytes(_accessTokenSecret);
+        _jwtSecurityTokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
+        var jwtToken = validatedToken as JwtSecurityToken;
 
-            try
-            {
-                jwtSecurityTokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
-                }, out SecurityToken validatedToken);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        return jwtToken;
+    }
 
-        public RefreshToken IssuesRefreshToken(string ipAddress)
+    public RefreshToken IssuesRefreshToken(string ipAddress)
+    {
+        var refreshToken = new RefreshToken
         {
-            var refreshToken = new RefreshToken
-            {
-                // token is a cryptographically strong random sequence of values
-                Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64)),
-                // token is valid for 7 days
-                Expires = DateTime.UtcNow.AddDays(_refreshTokenExpires),
-                Created = DateTime.UtcNow,
-                CreatedByIp = ipAddress,
-            };
+            // token is a cryptographically strong random sequence of values
+            Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64)),
+            // token is valid for 7 days
+            Expires = DateTime.UtcNow.AddDays(_refreshTokenExpires),
+            Created = DateTime.UtcNow,
+            CreatedByIp = ipAddress
+        };
 
-            return refreshToken;
-        }
+        return refreshToken;
+    }
+
+    public string JwtEncrypt(string key, ClaimsIdentity subject, long exp)
+    {
+        var tokenKey = Encoding.ASCII.GetBytes(key);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = subject,
+            Expires = DateTime.UtcNow.AddTicks(exp),
+            IssuedAt = DateTime.Now,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey),
+                SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = _jwtSecurityTokenHandler.CreateToken(tokenDescriptor);
+        return _jwtSecurityTokenHandler.WriteToken(token);
     }
 }
