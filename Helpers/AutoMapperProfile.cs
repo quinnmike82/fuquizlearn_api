@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.QuizBank;
 
 namespace fuquizlearn_api.Helpers
 {
@@ -43,6 +45,29 @@ namespace fuquizlearn_api.Helpers
                         return true;
                     }
                 ));
+
+            CreateMap<QuizCreate, Quiz>();
+            CreateMap<QuizUpdate, Quiz>().ForMember(x => x.Choices, op => op.MapFrom((src, dest, prop) => src.Choices ?? dest.Choices))
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
+
+            CreateMap<QuizBankCreate, QuizBank>().ForMember(qb => qb.Visibility, op => op.MapFrom(src => src.Visibility ?? Visibility.Public));
+            CreateMap<QuizBankUpdate, QuizBank>().ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+                        return true;
+                    }
+                ));
+            CreateMap<QuizBank, QuizBankResponse>().ForMember(x => x.AuthorName, op => op.MapFrom(src => src.Author.Username));
         }
     }
 }

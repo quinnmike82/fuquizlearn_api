@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using fuquizlearn_api.Helpers;
@@ -12,9 +13,11 @@ using fuquizlearn_api.Helpers;
 namespace fuquizlearn_api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20240125053451_modifyQuizBank")]
+    partial class modifyQuizBank
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,7 +94,7 @@ namespace fuquizlearn_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.QuizBank", b =>
@@ -115,9 +118,6 @@ namespace fuquizlearn_api.Migrations
                     b.Property<DateTime?>("Updated")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer");
-
                     b.Property<string>("descrition")
                         .HasColumnType("text");
 
@@ -125,12 +125,12 @@ namespace fuquizlearn_api.Migrations
 
                     b.HasIndex("AuthorId");
 
-                    b.ToTable("QuizBanks", (string)null);
+                    b.ToTable("QuizBanks");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Account", b =>
                 {
-                    b.OwnsMany("fuquizlearn_api.Entities.Account.RefreshTokens#fuquizlearn_api.Entities.RefreshToken", "RefreshTokens", b1 =>
+                    b.OwnsMany("fuquizlearn_api.Entities.RefreshToken", "RefreshTokens", b1 =>
                         {
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
@@ -170,7 +170,7 @@ namespace fuquizlearn_api.Migrations
 
                             b1.HasIndex("AccountId");
 
-                            b1.ToTable("RefreshToken", (string)null);
+                            b1.ToTable("RefreshToken");
 
                             b1.WithOwner("Account")
                                 .HasForeignKey("AccountId");
@@ -189,7 +189,7 @@ namespace fuquizlearn_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsMany("fuquizlearn_api.Entities.QuizBank.Quizes#fuquizlearn_api.Entities.Quiz", "Quizes", b1 =>
+                    b.OwnsMany("fuquizlearn_api.Entities.Quiz", "Quizes", b1 =>
                         {
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
@@ -221,7 +221,7 @@ namespace fuquizlearn_api.Migrations
 
                             b1.HasIndex("QuizBankId");
 
-                            b1.ToTable("Quiz", (string)null);
+                            b1.ToTable("Quiz");
 
                             b1.WithOwner()
                                 .HasForeignKey("QuizBankId");

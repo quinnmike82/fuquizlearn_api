@@ -59,6 +59,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IGoogleService, GoogleService>();
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
+    services.AddScoped<IQuizBankService, QuizBankService>();
     services.AddSendGrid(options =>
     {
         options.ApiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
