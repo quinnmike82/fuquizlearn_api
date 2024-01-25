@@ -1,60 +1,50 @@
-﻿using System;
-using System.Threading.Tasks;
-using SendGrid;
+﻿using SendGrid;
 using SendGrid.Helpers.Mail;
 
-namespace fuquizlearn_api.Services
+namespace fuquizlearn_api.Services;
+
+public interface IEmailService
 {
-    public interface IEmailService
+    Task SendAsync(string to, string subject, string html, string from = null);
+}
+
+public class EmailService : IEmailService
+{
+    private readonly ILogger<IEmailService> _logger;
+    private readonly ISendGridClient _sendGridClient;
+
+    public EmailService(ISendGridClient sendGridClient)
     {
-        Task SendAsync(string to, string subject, string html, string from = null);
+        _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
     }
 
-    public class EmailService : IEmailService
+    public async Task SendAsync(string to, string subject, string html, string from = null)
     {
-        private readonly ISendGridClient _sendGridClient;
+        if (string.IsNullOrEmpty(to))
+            throw new ArgumentException("The 'to' parameter cannot be null or empty.", nameof(to));
 
-        public EmailService(ISendGridClient sendGridClient)
+        if (string.IsNullOrEmpty(subject))
+            throw new ArgumentException("The 'subject' parameter cannot be null or empty.", nameof(subject));
+
+        var msg = new SendGridMessage
         {
-            _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
+            From = new EmailAddress(from ?? "ngocvlqt1995@gmail.com", "QuizLearn"),
+            Subject = subject
+        };
+
+        msg.AddContent(MimeType.Html, html);
+        msg.AddTo(new EmailAddress(to));
+
+        try
+        {
+            var response = await _sendGridClient.SendEmailAsync(msg).ConfigureAwait(false);
+            _logger.Log(LogLevel.Information, "[EMAIL SERVICE] Send email successfully:\nBody:{body}", response.Body);
         }
-
-        public async Task SendAsync(string to, string subject, string html, string from = null)
+        catch (Exception ex)
         {
-            if (string.IsNullOrEmpty(to))
-            {
-                throw new ArgumentException("The 'to' parameter cannot be null or empty.", nameof(to));
-            }
-
-            if (string.IsNullOrEmpty(subject))
-            {
-                throw new ArgumentException("The 'subject' parameter cannot be null or empty.", nameof(subject));
-            }
-
-            var msg = new SendGridMessage
-            {
-                From = new EmailAddress(from ?? "ngocvlqt1995@gmail.com", "QuizLearn"),
-                Subject = subject
-            };
-
-            msg.AddContent(MimeType.Html, html);
-            msg.AddTo(new EmailAddress(to));
-
-            try
-            {
-                var response = await _sendGridClient.SendEmailAsync(msg).ConfigureAwait(false);
-
-                // Log or handle the response as needed
-                Console.WriteLine($"SendGrid response: {response.StatusCode}");
-                Console.WriteLine($"Headers: {response.Headers}");
-                Console.WriteLine($"Body: {response.Body}");
-            }
-            catch (Exception ex)
-            {
-                // Log or handle the exception
-                Console.WriteLine($"Error sending email: {ex.Message}");
-                throw; // Rethrow the exception if needed
-            }
+            // Log or handle the exception
+            _logger.Log(LogLevel.Error, "[EMAIL SERVICE] Error sending email: {message}", ex.Message);
+            throw; // Rethrow the exception if needed
         }
     }
 }
