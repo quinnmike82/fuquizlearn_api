@@ -20,10 +20,11 @@ public interface IAccountService
     Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress);
     AuthenticateResponse RefreshToken(string token, string ipAddress);
     void RevokeToken(string token, string ipAddress);
+    string IssueForgotPasswordToken(Account account);
+    bool ValidateResetToken(string token, Account account);
     void Register(RegisterRequest model, string origin);
     void VerifyEmail(string token);
     string ForgotPassword(ForgotPasswordRequest model, string origin);
-    void ValidateResetToken(ValidateResetTokenRequest model);
     void ResetPassword(ResetPasswordRequest model);
     Account GetByEmail(string email);
     IEnumerable<AccountResponse> GetAll();
@@ -272,36 +273,43 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public string ForgotPassword(ForgotPasswordRequest model, string origin)
+    public string IssueForgotPasswordToken(Account account)
     {
-        var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
-
-        // always return ok response to prevent email enumeration
-        if (account == null) throw new AppException("errors.account-fail");
-
         // create reset token that expires after 1 day
-        var generatePin = _helperCryptoService.GeneratePIN(6);
-        var hashedPin = _helperCryptoService.HashSHA256(generatePin);
+
         var claims = new ClaimsIdentity(new[
         ]
         {
             new Claim("email", account.Email)
         });
         var token = _helperEncryptService.JwtEncrypt(_appSettings.ForgotPasswordSecret, claims, TimeSpan.TicksPerDay);
+        return token;
+    }
+
+    public string ForgotPassword(ForgotPasswordRequest model, string origin)
+    {
+        var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
+
+        // always return ok response to prevent email enumeration
+        if (account == null) throw new AppException("account-fail");
+        var generatePin = _helperCryptoService.GeneratePIN(6);
+        var hashedPin = _helperCryptoService.HashSHA256(generatePin);
+        var token = IssueForgotPasswordToken(account);
         account.ResetToken = hashedPin;
         account.ResetTokenExpires = DateTime.UtcNow.AddDays(1);
-
         _context.Accounts.Update(account);
         _context.SaveChanges();
-        var redirect = _helperFrontEnd.getUrl("/forgot/verify?t=" + token);
+        var redirect = _helperFrontEnd.GetUrl("/forgot/verify?t=" + token);
         // send email
         sendPasswordResetEmail(account, generatePin, redirect);
         return redirect;
     }
 
-    public void ValidateResetToken(ValidateResetTokenRequest model)
+    public bool ValidateResetToken(string token, Account account)
     {
-        getAccountByResetToken(model.Token);
+        var isTokenMatch = _helperCryptoService.CompareSHA256(account.ResetToken, token);
+
+        return isTokenMatch;
     }
 
     public void ResetPassword(ResetPasswordRequest model)
@@ -309,8 +317,8 @@ public class AccountService : IAccountService
         var claims = _helperEncryptService.JwtDecrypt(_appSettings.ForgotPasswordSecret, model.Token);
         var email = claims.Claims.First(claim => claim.Type == "email").Value;
         var account = _context.Accounts.FirstOrDefault(account => account.Email == email);
-        if (account == null) throw new AppException("errors.account-fail");
-        if (account.ResetToken == null) throw new AppException("errors.token-expire");
+        if (account == null) throw new AppException("account-fail");
+        if (account.ResetToken == null) throw new AppException("token-expire");
         // update password and remove reset token
         account.PasswordHash = BC.HashPassword(model.Password);
         account.PasswordReset = DateTime.UtcNow;
