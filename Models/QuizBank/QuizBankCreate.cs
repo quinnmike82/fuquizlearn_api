@@ -1,4 +1,5 @@
 ﻿using fuquizlearn_api.Enum;
+using fuquizlearn_api.Models.Quiz;
 using System.ComponentModel.DataAnnotations;
 
 namespace fuquizlearn_api.Models.QuizBank

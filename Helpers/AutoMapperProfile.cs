@@ -2,6 +2,7 @@
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 
 namespace fuquizlearn_api.Helpers
@@ -57,6 +58,7 @@ namespace fuquizlearn_api.Helpers
                         return true;
                     }
                 ));
+            CreateMap<Quiz, QuizResponse>();
 
             CreateMap<QuizBankCreate, QuizBank>().ForMember(qb => qb.Visibility, op => op.MapFrom(src => src.Visibility ?? Visibility.Public));
             CreateMap<QuizBankUpdate, QuizBank>().ForAllMembers(x => x.Condition(

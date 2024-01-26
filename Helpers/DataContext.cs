@@ -7,6 +7,7 @@ namespace fuquizlearn_api.Helpers
     public class DataContext : DbContext
     {
         public DbSet<Account> Accounts { get; set; }
+        public DbSet<Quiz> Quizes { get; set; }
         public DbSet<QuizBank> QuizBanks { get; set; }
 
         private readonly IConfiguration Configuration;
@@ -24,9 +25,15 @@ namespace fuquizlearn_api.Helpers
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<QuizBank>().OwnsMany(qb => qb.Quizes, q =>
+
+            modelBuilder.Entity<QuizBank>().HasMany(qb => qb.Quizes)
+                .WithOne(q => q.QuizBank)
+                .HasForeignKey(q => q.QuizBankId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Quiz>(q =>
             {
-                q.WithOwner().HasForeignKey("QuizBankId");
                 q.HasKey("Id");
                 q.Property(a => a.Choices)
                 .HasConversion(

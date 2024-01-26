@@ -4,6 +4,7 @@ using fuquizlearn_api.Helpers;
 using AutoMapper;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Enum;
+using fuquizlearn_api.Models.Quiz;
 
 namespace fuquizlearn_api.Services
 {
