@@ -52,6 +52,8 @@ var builder = WebApplication.CreateBuilder(args);
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
+    var sendGridApiKey = builder.Configuration.GetValue<string>("AppSettings:SendGridApiKey");
+    if (sendGridApiKey == null) throw new AppException("No SendGrid api key provided !");
     // configure DI for application services
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IHelperEncryptService, HelperEncryptService>();
@@ -62,10 +64,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IQuizBankService, QuizBankService>();
-    services.AddSendGrid(options =>
-    {
-        options.ApiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
-    });
+    services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
 }
 
 var app = builder.Build();
