@@ -95,10 +95,15 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("validate-reset-token")]
-    public IActionResult ValidateResetToken(ValidateResetTokenRequest model)
+    public IActionResult VerifyResetPasswordPin(VerifyResetAccountPinRequest model)
     {
-        _accountService.ValidateResetToken(model);
-        return Ok(new { message = "Token is valid" });
+        var requireAccount = _accountService.GetByEmail(model.Email);
+
+        var isVerified = _accountService.ValidateResetToken(model.Pin, requireAccount);
+        var token = _accountService.IssueForgotPasswordToken(requireAccount);
+        return isVerified
+            ? Ok(new { message = "Success", data = new { token } })
+            : BadRequest(new { message = "invalid-pin" });
     }
 
     [AllowAnonymous]
