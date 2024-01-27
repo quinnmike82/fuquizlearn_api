@@ -5,8 +5,8 @@ namespace fuquizlearn_api.Services;
 
 public interface IHelperFrontEnd
 {
-    public string getBaseUrl();
-    public string getUrl(string uri);
+    public string GetBaseUrl();
+    public string GetUrl(string uri);
 }
 
 public class HelperFrontEnd : IHelperFrontEnd
@@ -20,12 +20,12 @@ public class HelperFrontEnd : IHelperFrontEnd
         _baseUrl = _settings.FrontEndUrl;
     }
 
-    public string getBaseUrl()
+    public string GetBaseUrl()
     {
         return _baseUrl;
     }
 
-    public string getUrl(string uri)
+    public string GetUrl(string uri)
     {
         if (uri.StartsWith('/') && _baseUrl.EndsWith('/')) return _baseUrl + uri.PadLeft(1);
 
