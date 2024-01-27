@@ -64,6 +64,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IAccountService, AccountService>();
     services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IQuizBankService, QuizBankService>();
+    services.AddScoped<IQuizService, QuizService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
 }
 

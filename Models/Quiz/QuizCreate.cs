@@ -1,7 +1,7 @@
 ﻿using fuquizlearn_api.Entities;
 using System.ComponentModel.DataAnnotations;
 
-namespace fuquizlearn_api.Models.QuizBank
+namespace fuquizlearn_api.Models.Quiz
 {
     public class QuizCreate
     {
