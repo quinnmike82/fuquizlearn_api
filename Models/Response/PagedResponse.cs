@@ -2,14 +2,14 @@
 
 public class PagedMetadata
 {
-    public PagedMetadata(int limit, int take, int totalPages, string nextPage = "", string previousPage = "")
+    public PagedMetadata(int skip, int take, int totalPages)
     {
-        Limit = limit;
+        Skip = skip;
         Take = take;
         TotalPages = totalPages;
     }
 
-    public int Limit { get; set; }
+    public int Skip { get; set; }
     public int Take { get; set; }
     public int TotalPages { get; set; }
 }

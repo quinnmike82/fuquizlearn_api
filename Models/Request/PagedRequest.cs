@@ -5,11 +5,11 @@ namespace fuquizlearn_api.Models.Request;
 
 public class PagedRequest
 {
-    public int Take { get; set; } = 1;
-    public int Limit { get; set; } = 10;
+    public int Take { get; set; } = 10;
+    public int Skip { get; set; } = 0;
 
     public string SortBy { get; set; } = "";
-    public string SortDirection { get; set; } = SortDirectionEnum.Ascending.ToString();
+    public SortDirectionEnum SortDirection { get; set; } = SortDirectionEnum.Asc;
 
     public string Search { get; set; } = "";
 

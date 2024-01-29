@@ -1,8 +1,10 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
+using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace fuquizlearn_api.Extensions;
 
@@ -10,49 +12,54 @@ public static class Linq
 {
     #region Pagination
 
-    public static async Task<PagedResponse<T>> ToPagedAsync<T>(this IQueryable<T> src, PagedRequest options)
+    public static async Task<PagedResponse<T>> ToPagedAsync<T>(this IQueryable<T> src, PagedRequest options,
+        Expression<Func<T, bool>> where)
         where T : class
     {
         var queryExpression = src.Expression;
-        queryExpression = queryExpression.OrderBy(options.SortBy);
+        queryExpression = queryExpression.OrderBy(options.SortBy, options.SortDirection);
 
         if (queryExpression.CanReduce)
             queryExpression = queryExpression.Reduce();
 
+
         src = src.Provider.CreateQuery<T>(queryExpression);
+
+        if (options.SortDirection == SortDirectionEnum.Desc) src.OrderDescending();
+        if (!options.Search.IsNullOrEmpty()) src = src.Where(where);
+
+        var totalPages = (int)Math.Ceiling(await src.CountAsync() / (double)options.Take);
+
 
         var results = new PagedResponse<T>
         {
-            Data = await src.Take(options.Limit).Skip(options.Take).ToListAsync(),
-            Metadata = new PagedMetadata(options.Take, options.Limit, await src.CountAsync())
+            Data = await src.Skip(options.Skip).Take(options.Take).ToListAsync(),
+            Metadata = new PagedMetadata(options.Skip, options.Take, totalPages)
         };
 
 
         return results;
     }
 
-    private static Expression OrderBy(this Expression source, string orderBy)
+    private static Expression OrderBy(this Expression source, string orderBy, SortDirectionEnum dir)
     {
         if (!string.IsNullOrWhiteSpace(orderBy))
         {
             var orderBys = orderBy.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            for (var i = 0; i < orderBys.Length; i++) source = AddOrderBy(source, orderBys[i], i);
+            for (var i = 0; i < orderBys.Length; i++) source = AddOrderBy(source, orderBys[i], dir, i);
         }
 
         return source;
     }
 
-    private static Expression AddOrderBy(Expression source, string orderBy, int index)
+    private static Expression AddOrderBy(Expression source, string orderBy, SortDirectionEnum dir, int index)
     {
-        var orderByParams = orderBy.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         var orderByMethodName = index == 0 ? "OrderBy" : "ThenBy";
-        var parameterPath = orderByParams[0];
-        if (orderByParams.Length > 1 && orderByParams[1].Equals("desc", StringComparison.OrdinalIgnoreCase))
-            orderByMethodName += "Descending";
+        orderByMethodName += dir == SortDirectionEnum.Desc ? "Descending" : "";
 
         var sourceType = source.Type.GetGenericArguments().First();
         var parameterExpression = Expression.Parameter(sourceType, "p");
-        var orderByExpression = BuildPropertyPathExpression(parameterExpression, parameterPath);
+        var orderByExpression = BuildPropertyPathExpression(parameterExpression, orderBy);
         var orderByFuncType = typeof(Func<,>).MakeGenericType(sourceType, orderByExpression.Type);
         var orderByLambda = Expression.Lambda(orderByFuncType, orderByExpression, parameterExpression);
 
