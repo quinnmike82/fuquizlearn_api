@@ -94,7 +94,6 @@ using (var scope = app.Services.CreateScope())
     // global error handler
     app.UseMiddleware<ErrorHandlerMiddleware>();
 
-    // custom jwt auth middleware
     app.UseMiddleware<JwtMiddleware>();
     app.UsePathBase(prefix);
 

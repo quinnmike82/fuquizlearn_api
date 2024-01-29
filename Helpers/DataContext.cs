@@ -2,45 +2,43 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
-namespace fuquizlearn_api.Helpers
+namespace fuquizlearn_api.Helpers;
+
+public class DataContext : DbContext
 {
-    public class DataContext : DbContext
+    private readonly IConfiguration Configuration;
+
+    public DataContext(IConfiguration configuration)
     {
-        public DbSet<Account> Accounts { get; set; }
-        public DbSet<Quiz> Quizes { get; set; }
-        public DbSet<QuizBank> QuizBanks { get; set; }
+        Configuration = configuration;
+    }
 
-        private readonly IConfiguration Configuration;
+    public DbSet<Account> Accounts { get; set; }
+    public DbSet<Quiz> Quizes { get; set; }
+    public DbSet<QuizBank> QuizBanks { get; set; }
 
-        public DataContext(IConfiguration configuration)
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
+    {
+        // connect to supabase database
+        options.UseNpgsql(Configuration.GetConnectionString("Supabase"));
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<QuizBank>().HasMany(qb => qb.Quizes)
+            .WithOne(q => q.QuizBank)
+            .HasForeignKey(q => q.QuizBankId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Quiz>(q =>
         {
-            Configuration = configuration;
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            // connect to supabase database
-            options.UseNpgsql(Configuration.GetConnectionString("Supabase"));
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-
-            modelBuilder.Entity<QuizBank>().HasMany(qb => qb.Quizes)
-                .WithOne(q => q.QuizBank)
-                .HasForeignKey(q => q.QuizBankId)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Quiz>(q =>
-            {
-                q.HasKey("Id");
-                q.Property(a => a.Choices)
+            q.HasKey("Id");
+            q.Property(a => a.Choices)
                 .HasConversion(
                     metadata => JsonConvert.SerializeObject(metadata),
                     json => JsonConvert.DeserializeObject<List<Choice>>(json))
                 .HasColumnType("jsonb");
-            });
-        }
+        });
     }
 }
