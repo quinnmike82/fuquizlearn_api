@@ -2,16 +2,18 @@
 
 public class PagedMetadata
 {
-    public PagedMetadata(int skip, int take, int totalPages)
+    public PagedMetadata(int skip, int take, int totals, bool hasMore)
     {
         Skip = skip;
         Take = take;
-        TotalPages = totalPages;
+        Totals = totals;
+        HasMore = hasMore;
     }
 
     public int Skip { get; set; }
     public int Take { get; set; }
-    public int TotalPages { get; set; }
+    public int Totals { get; set; }
+    public bool HasMore { get; set; }
 }
 
 public class PagedResponse<T>

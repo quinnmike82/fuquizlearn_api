@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Middleware;
 using fuquizlearn_api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -91,6 +92,7 @@ using (var scope = app.Services.CreateScope())
         .AllowAnyHeader()
         .AllowCredentials());
 
+    if (builder.Environment.IsDevelopment()) app.UseMiddleware<RequestLoggingMiddleware>();
     // global error handler
     app.UseMiddleware<ErrorHandlerMiddleware>();
 

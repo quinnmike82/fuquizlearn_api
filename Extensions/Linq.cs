@@ -12,12 +12,12 @@ public static class Linq
 {
     #region Pagination
 
-    public static async Task<PagedResponse<T>> ToPagedAsync<T>(this IQueryable<T> src, PagedRequest options,
+    public static async Task<PagedResponse<T>> ToPagedAsync<T>(this IQueryable<T> src, PagedRequest payload,
         Expression<Func<T, bool>> where)
         where T : class
     {
         var queryExpression = src.Expression;
-        queryExpression = queryExpression.OrderBy(options.SortBy, options.SortDirection);
+        queryExpression = queryExpression.OrderBy(payload.SortBy, payload.SortDirection);
 
         if (queryExpression.CanReduce)
             queryExpression = queryExpression.Reduce();
@@ -25,16 +25,17 @@ public static class Linq
 
         src = src.Provider.CreateQuery<T>(queryExpression);
 
-        if (options.SortDirection == SortDirectionEnum.Desc) src.OrderDescending();
-        if (!options.Search.IsNullOrEmpty()) src = src.Where(where);
+        if (payload.SortDirection == SortDirectionEnum.Desc) src.OrderDescending();
+        if (!payload.Search.IsNullOrEmpty()) src = src.Where(where);
 
-        var totalPages = (int)Math.Ceiling(await src.CountAsync() / (double)options.Take);
+        var total = await src.CountAsync();
+        var hasMore = total > payload.Skip + payload.Take;
 
 
         var results = new PagedResponse<T>
         {
-            Data = await src.Skip(options.Skip).Take(options.Take).ToListAsync(),
-            Metadata = new PagedMetadata(options.Skip, options.Take, totalPages)
+            Data = await src.Skip(payload.Skip).Take(payload.Take).ToListAsync(),
+            Metadata = new PagedMetadata(payload.Skip, payload.Take, total, hasMore)
         };
 
 
