@@ -12,9 +12,11 @@ namespace fuquizlearn_api.Controllers
     public class QuizController : BaseController
     {
         private readonly IQuizService _quizService;
-        public QuizController(IQuizService quizService)
+        private readonly IGeminiAIService _geminiAIService;
+        public QuizController(IQuizService quizService, IGeminiAIService geminiAIService)
         {
             this._quizService = quizService;
+            this._geminiAIService = geminiAIService;
         }
 
         [Authorize]
@@ -47,6 +49,20 @@ namespace fuquizlearn_api.Controllers
         {
             _quizService.DeleteQuizInBank(bankId, quizId, Account);
             return Ok(new { message = "Quiz deleted successfully" });
+        }
+        
+        [HttpGet("text-only-input")]
+        public ActionResult<IEnumerable<QuizResponse>> GetTextResult(string prompt)
+        {
+            var result = _geminiAIService.GetTextOnly(prompt);
+            return Ok(result);
+        }
+        
+        [HttpPost("text-image-input")]
+        public ActionResult<QuizResponse> GetTextPictureResult(Stream file, string prompt)
+        {
+            var result = _geminiAIService.GetTextAndImage(file, prompt);
+            return Ok(result);
         }
     }
 }
