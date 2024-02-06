@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System.Text;
+using System.Web;
+using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
@@ -91,7 +93,7 @@ public class QuizBankService : IQuizBankService
     {
         var quizBanks = await _context.QuizBanks.ToPagedAsync(options,
             x =>
-                x.BankName.Contains(options.Search));
+                x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
 
         return new PagedResponse<QuizBankResponse>

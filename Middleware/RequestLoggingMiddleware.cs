@@ -14,8 +14,11 @@ public class RequestLoggingMiddleware
 
     public async Task Invoke(HttpContext context)
     {
+        var searchParams =
+            context.Request.Query.Keys.Aggregate("",
+                (current, key) => current + $"&{key}={context.Request.Query[key]}");
         _logger.LogInformation(
-            $"Request: [{context.Request.Method}] {context.Request.Path}");
+            $"Request: [{context.Request.Method}] {context.Request.Path}{searchParams}");
         await _next(context);
     }
 }
