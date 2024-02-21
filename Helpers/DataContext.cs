@@ -30,15 +30,5 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.QuizBankId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Quiz>(q =>
-        {
-            q.HasKey("Id");
-            q.Property(a => a.Choices)
-                .HasConversion(
-                    metadata => JsonConvert.SerializeObject(metadata),
-                    json => JsonConvert.DeserializeObject<List<Choice>>(json))
-                .HasColumnType("jsonb");
-        });
     }
 }

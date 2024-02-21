@@ -61,7 +61,6 @@ namespace fuquizlearn_api.Services
 
             var quiz = GetQuiz(bankId, quizId);
             _mapper.Map(model, quiz);
-            quiz.Choices = model.Choices ?? quiz.Choices;
             quiz.Updated = DateTime.UtcNow;
             _context.SaveChanges();
 
