@@ -131,7 +131,6 @@ public class QuizBankService : IQuizBankService
         var quiz = quizBank.Quizes.FirstOrDefault(x => x.Id == quizId);
         if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
         _mapper.Map(model, quiz);
-        quiz.Choices = model.Choices ?? quiz.Choices;
         quiz.Updated = DateTime.UtcNow;
         quizBank.Updated = DateTime.UtcNow;
         _context.SaveChanges();

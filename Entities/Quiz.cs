@@ -9,14 +9,9 @@ namespace fuquizlearn_api.Entities
         public int QuizBankId { get; set; }
         public QuizBank QuizBank { get; set; }
         public string Question { get; set; }
-        public List<Choice> Choices { get; set; }
+        public string Answer{ get; set; }
         public string? Explaination { get; set; }
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
-    }
-    public class Choice
-    {
-        public string ChoiceContent { get; set; }
-        public bool IsAnswer { get; set;}
     }
 }

@@ -7,7 +7,7 @@ namespace fuquizlearn_api.Models.QuizBank
     {
         public string? BankName { get; set; }
         public QuizCreate[]? Quizes { get; set; }
-        public string? descrition { get; set; }
+        public string? Description { get; set; }
         public Visibility? Visibility { get; set; }
     }
 }

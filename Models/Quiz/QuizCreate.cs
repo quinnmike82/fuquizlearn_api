@@ -8,7 +8,7 @@ namespace fuquizlearn_api.Models.Quiz
         [Required]
         public string Question { get; set; }
         [Required]
-        public Choice[] Choices { get; set; }
+        public string Answer{ get; set; }
         public string? Explaination { get; set; }
     }
 }

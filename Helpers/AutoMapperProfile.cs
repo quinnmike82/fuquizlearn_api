@@ -47,8 +47,8 @@ namespace fuquizlearn_api.Helpers
                     }
                 ));
 
-            CreateMap<QuizCreate, Quiz>();
-            CreateMap<QuizUpdate, Quiz>().ForMember(x => x.Choices, op => op.MapFrom((src, dest, prop) => src.Choices ?? dest.Choices))
+            CreateMap<QuizCreate, Quiz>().ForMember(x => x.Created, op => op.MapFrom((src) => DateTime.UtcNow));
+            CreateMap<QuizUpdate, Quiz>()
                 .ForAllMembers(x => x.Condition(
                     (src, dest, prop) =>
                     {
