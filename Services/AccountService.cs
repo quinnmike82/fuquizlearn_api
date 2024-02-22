@@ -22,8 +22,8 @@ public interface IAccountService
     void RevokeToken(string token, string ipAddress);
     string IssueForgotPasswordToken(Account account);
     bool ValidateResetToken(string token, Account account);
-    void Register(RegisterRequest model, string origin);
-    void VerifyEmail(string token);
+    void Register(RegisterRequest model);
+    void VerifyEmail(string email, string token);
     string ForgotPassword(ForgotPasswordRequest model, string origin);
     void ResetPassword(ResetPasswordRequest model);
     Account GetByEmail(string email);
@@ -216,55 +216,12 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public void Register(RegisterRequest model, string origin)
+    public void VerifyEmail(string email, string token)
     {
-        // validate
-        if (_context.Accounts.Any(x => x.Email == model.Email))
-        {
-            // send already registered error in email to prevent account enumeration
-            sendAlreadyRegisteredEmail(model.Email, origin);
-            throw new AppException("Email is already existed");
-        }
-
-        if (_context.Accounts.Any(x => x.Username == model.Username))
-        {
-            // send already registered error in email to prevent account enumeration
-            sendAlreadyRegisteredEmail(model.Email, origin);
-            throw new AppException("Email is already existed");
-        }
-
-        if (model.Avatar != null)
-        {
-            // upload image and save image url
-        }
-
-
-        // map model to new account object
-        var account = _mapper.Map<Account>(model);
-
-        // first registered account is an admin
-        var isFirstAccount = _context.Accounts.Count() == 0;
-        account.Role = isFirstAccount ? Role.Admin : Role.User;
-        account.Created = DateTime.UtcNow;
-        account.VerificationToken = generateVerificationToken();
-
-        // hash password
-        account.PasswordHash = BC.HashPassword(model.Password);
-
-        // save account
-        _context.Accounts.Add(account);
-        _context.SaveChanges();
-        Console.WriteLine(account.VerificationToken);
-        // send email
-        sendVerificationEmail(account, origin);
-    }
-
-    public void VerifyEmail(string token)
-    {
-        var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token);
+        var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token && x.Email == email);
 
         if (account == null)
-            throw new AppException("Verification failed");
+            throw new AppException("verification-failed");
 
         account.Verified = DateTime.UtcNow;
         account.VerificationToken = null;
@@ -424,6 +381,31 @@ public class AccountService : IAccountService
         return account ?? throw new KeyNotFoundException("Account not found");
     }
 
+    public void Register(RegisterRequest model)
+    {
+        // validate
+        if (_context.Accounts.Any(x => x.Email == model.Email)) throw new AppException("email-existed");
+
+        if (_context.Accounts.Any(x => x.Username == model.Username)) throw new AppException("username-existed");
+
+        // map model to new account object
+        var account = _mapper.Map<Account>(model);
+
+        account.Role = Role.User;
+        account.Created = DateTime.UtcNow;
+        account.VerificationToken = _helperCryptoService.GeneratePIN(6);
+
+        // hash password
+        account.PasswordHash = BC.HashPassword(model.Password);
+
+        // save account
+        _context.Accounts.Add(account);
+        _context.SaveChanges();
+        Console.WriteLine(account.VerificationToken);
+        // send email
+        sendVerificationEmail(account, _helperFrontEnd.GetBaseUrl());
+    }
+
     // helper methods
 
     private Account getAccount(int id)
@@ -472,19 +454,6 @@ public class AccountService : IAccountService
         var tokenIsUnique = !_context.Accounts.Any(x => x.ResetToken == token);
         if (!tokenIsUnique)
             return generateResetToken();
-
-        return token;
-    }
-
-    private string generateVerificationToken()
-    {
-        // token is a cryptographically strong random sequence of values
-        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-
-        // ensure token is unique by checking against db
-        var tokenIsUnique = !_context.Accounts.Any(x => x.VerificationToken == token);
-        if (!tokenIsUnique)
-            return generateVerificationToken();
 
         return token;
     }

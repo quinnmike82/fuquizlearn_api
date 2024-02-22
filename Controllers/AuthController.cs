@@ -71,9 +71,9 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("register")]
-    public IActionResult Register([FromForm] RegisterRequest model)
+    public IActionResult Register([FromBody] RegisterRequest model)
     {
-        _accountService.Register(model, Request.Headers["origin"]);
+        _accountService.Register(model);
         return Ok(new { message = "Registration successful, please check your email for verification instructions" });
     }
 
@@ -81,7 +81,7 @@ public class AuthController : BaseController
     [HttpPost("verify-email")]
     public IActionResult VerifyEmail(VerifyEmailRequest model)
     {
-        _accountService.VerifyEmail(model.Token);
+        _accountService.VerifyEmail(model.Email, model.Token);
         return Ok(new { message = "Verification successful, you can now login" });
     }
 
