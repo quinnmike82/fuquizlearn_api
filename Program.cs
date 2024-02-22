@@ -9,9 +9,12 @@ using SendGrid.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
 // add services to DI container
 {
     var services = builder.Services;
+    var appSettings = Config(builder.Services, builder.Configuration);
     var env = builder.Environment;
 
     services.AddDbContext<DataContext>();
@@ -49,12 +52,24 @@ var builder = WebApplication.CreateBuilder(args);
             }
         });
     });
+    
+    AppSettings Config(IServiceCollection services, IConfiguration configuration)
+    {
+        var appSettings = new AppSettings();
+        configuration.GetSection("AppSettings").Bind(appSettings);
+        services.AddSingleton(appSettings);
+        return appSettings;
+    }
 
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
     var sendGridApiKey = builder.Configuration.GetValue<string>("AppSettings:SendGridApiKey");
     if (sendGridApiKey == null) throw new AppException("No SendGrid api key provided !");
+
+    var geminiAIApiKey = builder.Configuration.GetValue<string>("AppSettings:GeminiAIApiKey");
+    if (geminiAIApiKey == null) throw new AppException(("No GeminiAI api key provided!"));
+    
     // configure DI for application services
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IHelperEncryptService, HelperEncryptService>();
@@ -66,7 +81,16 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IQuizBankService, QuizBankService>();
     services.AddScoped<IQuizService, QuizService>();
+    services.AddScoped<IGeminiAIService, GeminiService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
+    services.AddHttpClient("GeminiAITextOnly", opt =>
+    {
+        opt.BaseAddress = new Uri($"{appSettings.TextOnlyUrl}");
+    });
+    services.AddHttpClient("GeminiAITextAndImage", opt =>
+    {
+        opt.BaseAddress = new Uri($"{appSettings.TextAndImageUrl}");
+    });
 }
 
 var app = builder.Build();
@@ -100,6 +124,12 @@ using (var scope = app.Services.CreateScope())
     app.UsePathBase(prefix);
 
     app.MapControllers();
+    
+    // TODO: remove 2 line below
+    app.MapGet("/text-only-input", async (IGeminiAIService geminiService, string prompt) =>
+        await geminiService.GetTextOnly(prompt));
+    app.MapPost("/text-image-input", async (IFormFile formFile, IGeminiAIService geminiService, string prompt) =>
+        await geminiService.GetTextAndImage(formFile.OpenReadStream(), prompt));
 }
 
 app.Run();

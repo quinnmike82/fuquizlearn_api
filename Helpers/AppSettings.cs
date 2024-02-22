@@ -15,4 +15,7 @@ public class AppSettings
     public string FrontEndUrl { get; set; }
     public string SendGridApiKey { get; set; }
     public string ForgotPasswordSecret { get; set; }
+    public string TextOnlyUrl { get; set; }
+    public string TextAndImageUrl { get; set; }
+    public string GeminiAIApiKey { get; set; }
 }
