@@ -2,6 +2,8 @@
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Classroom;
+using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 
@@ -70,6 +72,13 @@ namespace fuquizlearn_api.Helpers
                     }
                 ));
             CreateMap<QuizBank, QuizBankResponse>().ForMember(x => x.AuthorName, op => op.MapFrom(src => src.Author.Username));
+            CreateMap<ClassroomCreate, Classroom>();
+            CreateMap<Classroom, ClassroomResponse>();
+            CreateMap<ClassroomUpdate, Classroom>();
+            CreateMap<Post, PostResponse>();
+            CreateMap<PostCreate, Post>();
+            CreateMap<PostUpdate, Post>();
+
         }
     }
 }
