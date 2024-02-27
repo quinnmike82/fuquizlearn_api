@@ -16,6 +16,11 @@ public class DataContext : DbContext
     public DbSet<Account> Accounts { get; set; }
     public DbSet<Quiz> Quizes { get; set; }
     public DbSet<QuizBank> QuizBanks { get; set; }
+    public DbSet<Classroom> Classrooms { get; set; }
+    public DbSet<ClassroomMember> ClassroomsMembers { get; set; }
+    public DbSet<Post> Posts { get; set; }
+    public DbSet<Comment> Comments { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {

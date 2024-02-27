@@ -10,6 +10,6 @@ public class QuizBank
     public List<Quiz> Quizes { get; set; }
     public string? Description { get; set; }
     public Visibility Visibility { get; set; }
-    public DateTime Created { get; set; }
+    public DateTime Created { get; set; } = DateTime.Now;
     public DateTime? Updated { get; set; }
 }
