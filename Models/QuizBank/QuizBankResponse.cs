@@ -1,4 +1,6 @@
-﻿using fuquizlearn_api.Enum;
+﻿using fuquizlearn_api.Entities;
+using fuquizlearn_api.Enum;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Quiz;
 
 namespace fuquizlearn_api.Models.QuizBank;
@@ -7,7 +9,7 @@ public class QuizBankResponse
 {
     public int Id { get; set; }
     public string BankName { get; set; }
-    public string AuthorName { get; set; }
+    public AccountResponse Author { get; set; }
     public List<QuizResponse> Quizes { get; set; }
     public string? Description { get; set; }
     public Visibility Visibility { get; set; }
