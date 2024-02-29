@@ -11,7 +11,7 @@ namespace fuquizlearn_api.Entities
         public string Question { get; set; }
         public string Answer{ get; set; }
         public string? Explaination { get; set; }
-        public DateTime Created { get; set; }
+        public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime? Updated { get; set; }
     }
 }

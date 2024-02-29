@@ -16,6 +16,11 @@ public class DataContext : DbContext
     public DbSet<Account> Accounts { get; set; }
     public DbSet<Quiz> Quizes { get; set; }
     public DbSet<QuizBank> QuizBanks { get; set; }
+    public DbSet<Classroom> Classrooms { get; set; }
+    public DbSet<ClassroomMember> ClassroomsMembers { get; set; }
+    public DbSet<Post> Posts { get; set; }
+    public DbSet<Comment> Comments { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -28,6 +33,11 @@ public class DataContext : DbContext
         modelBuilder.Entity<QuizBank>().HasMany(qb => qb.Quizes)
             .WithOne(q => q.QuizBank)
             .HasForeignKey(q => q.QuizBankId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Post>().HasMany(qb => qb.Comments)
+            .WithOne(q => q.Post)
+            .HasForeignKey(q => q.PostId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
     }

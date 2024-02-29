@@ -9,6 +9,7 @@ using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
+using Microsoft.EntityFrameworkCore;
 
 namespace fuquizlearn_api.Services;
 
@@ -141,7 +142,7 @@ public class QuizBankService : IQuizBankService
 
     private QuizBank GetQuizBank(int id)
     {
-        var quizBank = _context.QuizBanks.Find(id);
+        var quizBank = _context.QuizBanks.Include(i => i.Author).FirstOrDefault(i => i.Id == id);
         if (quizBank == null) throw new KeyNotFoundException("Not found QuizBank");
         return quizBank;
     }

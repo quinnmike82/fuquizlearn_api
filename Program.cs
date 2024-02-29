@@ -82,6 +82,8 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IQuizBankService, QuizBankService>();
     services.AddScoped<IQuizService, QuizService>();
     services.AddScoped<IGeminiAIService, GeminiService>();
+    services.AddScoped<IClassroomService, ClassroomService>();
+    services.AddScoped<IPostService, PostService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
     services.AddHttpClient("GeminiAITextOnly", opt =>
     {
