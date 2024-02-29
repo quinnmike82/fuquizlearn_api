@@ -8,7 +8,7 @@
         public Classroom? Classroom { get; set; }
         public Account? Author { get; set; }
         public List<Comment>? Comments { get; set; }
-        public DateTime Created { get; set; } = DateTime.Now;
+        public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime? Updated { get; set; }
     }
 }
