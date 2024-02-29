@@ -7,7 +7,5 @@ namespace fuquizlearn_api.Models.Classroom
         public int Id { get; set; }
         public string Classname { get; set; }
         public string Description { get; set; }
-        public int[] BankIds { get; set; }
-        public List<ClassroomCode> ClassroomCodes { get; set; }
     }
 }

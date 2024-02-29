@@ -35,5 +35,10 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.QuizBankId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Post>().HasMany(qb => qb.Comments)
+            .WithOne(q => q.Post)
+            .HasForeignKey(q => q.PostId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

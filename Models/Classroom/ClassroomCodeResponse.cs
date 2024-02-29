@@ -1,9 +1,9 @@
-﻿namespace fuquizlearn_api.Entities
+﻿namespace fuquizlearn_api.Models.Classroom
 {
-    public class ClassroomCode
+    public class ClassroomCodeResponse
     {
         public int Id { get; set; }
-        public Classroom Classroom { get; set; } 
+        public int ClassroomId { get; set; }
         public string Code { get; set; }
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime Expires { get; set; }

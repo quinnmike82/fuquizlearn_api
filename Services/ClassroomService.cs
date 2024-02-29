@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
+using AutoMapper.Execution;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Migrations;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Posts;
+using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -20,13 +23,13 @@ namespace fuquizlearn_api.Services
         Task<List<ClassroomResponse>> GetAllClassrooms();
         Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account acncout);
         Task<ClassroomResponse> UpdateClassroom(ClassroomUpdate classroomUpdate, Account account);
-        Task AddMember(AddMember addMember);
+        Task AddMember(AddMember addMember, Account account);
         Task RemoveMember(int memberId, int classroomId, Account account);
         Task DeleteClassroom(int id, Account account);
-        Task<ClassroomCode> GenerateClassroomCode(int classroomId, Account account);
-        Task<List<ClassroomCode>> GetAllClassroomCodes(int classroomId);
+        Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account);
+        Task<List<ClassroomCodeResponse>> GetAllClassroomCodes(int classroomId);
         Task JoinClassroomWithCode(string classroomCode, Account account);
-        Task<QuizBankResponse> AddQuizBank(QuizBankCreate model, Account account);
+        Task<QuizBankResponse> AddQuizBank(int classroomId, QuizBankCreate model, Account account);
         Task CopyQuizBank(int quizbankId, int classroomId, Account account);
     }
     public class ClassroomService : IClassroomService
@@ -39,7 +42,7 @@ namespace fuquizlearn_api.Services
             _context = context;
             _mapper = mapper;
         }
-        public async Task AddMember(AddMember addMember)
+        public async Task AddMember(AddMember addMember, Account account)
         {
             var classRoom = await _context.Classrooms.FirstOrDefaultAsync(c => c.Id == addMember.classroomId);
             if (classRoom == null)
@@ -48,8 +51,8 @@ namespace fuquizlearn_api.Services
             }
             var check = await _context.ClassroomsMembers.FirstOrDefaultAsync(c => c.ClassroomId == addMember.classroomId && c.AccountId == addMember.memberId);
             if(check != null)
-                throw new InvalidOperationException("ClassroomMember already exists.");
-            if (classRoom.OwnerId != addMember.currentAccountId)
+                throw new AppException("ClassroomMember already exists.");
+            if (classRoom.Account.Id != account.Id)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
@@ -59,17 +62,39 @@ namespace fuquizlearn_api.Services
                 ClassroomId = addMember.classroomId
             };
             _context.ClassroomsMembers.Add(classroomMember);
+            if (classRoom.AccountIds == null)
+            {
+                classRoom.AccountIds = new int[] { classroomMember.Id };
+            }
+            else
+            {
+                classRoom.AccountIds = classRoom.AccountIds.Append(addMember.memberId).ToArray();
+            }
+
+            _context.Classrooms.Update(classRoom);
             await _context.SaveChangesAsync();
         }
 
-        public async Task<QuizBankResponse> AddQuizBank(QuizBankCreate model, Account account)
+        public async Task<QuizBankResponse> AddQuizBank(int classroomId, QuizBankCreate model, Account account)
         {
-            if (model.Visibility == null) model.Visibility = Visibility.Public;
-
+            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId);
+            if (classroom == null)
+                throw new KeyNotFoundException("Cound not find Classroom");
             var quizBank = _mapper.Map<QuizBank>(model);
             quizBank.Created = DateTime.UtcNow;
             quizBank.Author = account;
             _context.QuizBanks.Add(quizBank);
+            await _context.SaveChangesAsync();
+
+            if (classroom.BankIds == null)
+            {
+                classroom.BankIds = new int[] { quizBank.Id };
+            }
+            else
+            {
+                classroom.BankIds = classroom.BankIds.Append(quizBank.Id).ToArray();
+            }
+            _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<QuizBankResponse>(quizBank);
@@ -77,38 +102,40 @@ namespace fuquizlearn_api.Services
 
         public async Task CopyQuizBank(int quizbankId, int classroomId, Account account)
         {
-            var quizBank = await _context.QuizBanks.FirstOrDefaultAsync(i => i.Id == quizbankId);
+            var quizBank = await _context.QuizBanks.Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == quizbankId);
             if (quizBank == null)
                 throw new KeyNotFoundException("Could not find QuizBank");
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
-            if (account.Id != classroom.OwnerId && account.Role != Role.Admin)
+            if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
             var newBank = new QuizBank
             {
                 BankName = quizBank.BankName,
                 Description = quizBank.Description,
                 Visibility = quizBank.Visibility,
-                Quizes = quizBank.Quizes
+                Author = account
             };
-            var newQuizes = new List<Quiz>();
+            _context.QuizBanks.Add(newBank);
+            await _context.SaveChangesAsync();
+            newBank.Quizes = new List<Quiz>();
             foreach (var quiz in quizBank.Quizes)
             {
-                var newQuiz = new Quiz
+                var newQuiz = new QuizCreate
                 {
                     Answer = quiz.Answer,
                     Explaination = quiz.Explaination,
-                    Question = quiz.Question,
-                    QuizBankId = quiz.QuizBankId
+                    Question = quiz.Question
                 };
-                _context.Add(newQuiz);
-                newQuizes.Add(newQuiz);
+                newBank.Quizes.Add(_mapper.Map<Quiz>(newQuiz));
             }
-            newBank.Quizes = newQuizes;
-            _context.QuizBanks.Add(newBank);
-            classroom.BankIds.Append(newBank.Id);
-            _context.QuizBanks.Update(quizBank);
+            _context.QuizBanks.Update(newBank);
+            if (classroom.BankIds != null)
+                classroom.BankIds.Append(newBank.Id);
+            else classroom.BankIds = new int[]{newBank.Id};
+            _context.QuizBanks.Update(newBank);
+            _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
         }
 
@@ -128,7 +155,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find Classroom");
             }
-            if (!(classRoom.OwnerId == account.Id || account.Role != Role.Admin))
+            if (!(classRoom.Account.Id == account.Id || account.Role != Role.Admin))
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
@@ -137,31 +164,34 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<ClassroomCode> GenerateClassroomCode(int classroomId, Account account)
+        public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)
         {
             var classroom = await _context.Classrooms.FirstOrDefaultAsync( i => i.Id == classroomId);
             if(classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
-            if(classroom.OwnerId != account.Id)
+            if(classroom.Account.Id != account.Id)
                 throw new UnauthorizedAccessException("Unauthorized");
             string code = generateVerificationToken();
             var classroomCode = new ClassroomCode
             {
                 Code = code,
                 Expires = DateTime.UtcNow.AddDays(7),
+                Classroom = classroom
             };
+            classroom.ClassroomCodes ??= new List<ClassroomCode>();
+
             classroom.ClassroomCodes.Add(classroomCode);
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
-            return classroomCode;
+            return _mapper.Map<ClassroomCodeResponse>(classroomCode);
         }
 
-        public async Task<List<ClassroomCode>> GetAllClassroomCodes(int classroomId)
+        public async Task<List<ClassroomCodeResponse>> GetAllClassroomCodes(int classroomId)
         {
-            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
+            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
-            return classroom.ClassroomCodes;
+            return _mapper.Map<List<ClassroomCodeResponse>>(classroom.ClassroomCodes);
         }
 
         public async Task<List<ClassroomResponse>> GetAllClassrooms()
@@ -172,7 +202,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account account)
         {
-            var classroomsOwned = await _context.Classrooms.Where(i => i.OwnerId == account.Id).ToListAsync();
+            var classroomsOwned = await _context.Classrooms.Where(i => i.Account.Id == account.Id).ToListAsync();
             var classroomsJoined = await _context.ClassroomsMembers
                                                      .Where(i => i.AccountId == account.Id)
                                                      .Select(cm => cm.Classroom)
@@ -191,10 +221,15 @@ namespace fuquizlearn_api.Services
 
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
         {
-            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.ClassroomCodes.Any( c => c.Code == classroomCode));
+            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any( c => c.Code == classroomCode));
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
+            }
+            var check = await _context.ClassroomsMembers.FirstOrDefaultAsync(i => i.ClassroomId == classroom.Id && i.AccountId == account.Id);
+            if (check != null)
+            {
+                throw new AppException("Already joined");
             }
             var code = classroom.ClassroomCodes.Single(i => i.Code == classroomCode);
             if(code.IsExpired)
@@ -206,6 +241,16 @@ namespace fuquizlearn_api.Services
             };
             _context.ClassroomsMembers.Add(classroomMember);
             await _context.SaveChangesAsync();
+            if (classroom.AccountIds == null)
+            {
+                classroom.AccountIds = new int[] { account.Id };
+            }
+            else
+            {
+                classroom.AccountIds = classroom.AccountIds.Append(account.Id).ToArray();
+            }
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
         }
 
         public async Task RemoveMember(int memberId, int classroomId,Account account)
@@ -216,8 +261,20 @@ namespace fuquizlearn_api.Services
                 throw new KeyNotFoundException("Could not find Classroom");
             }
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId);
-            if(account.Id != classroom.OwnerId && account.Role != Role.Admin)
+            if(account.Id != classroom.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
+            int indexToRemove = Array.IndexOf(classroom.AccountIds, memberId);
+
+            if (indexToRemove != -1)
+            {
+                var updatedAccountIds = classroom.AccountIds.ToList();
+                updatedAccountIds.RemoveAt(indexToRemove);
+
+                classroom.AccountIds = updatedAccountIds.ToArray();
+
+                _context.Classrooms.Update(classroom);
+                await _context.SaveChangesAsync();
+            }
             _context.ClassroomsMembers.Remove(classroomMember);
             await _context.SaveChangesAsync();
         }
@@ -225,18 +282,21 @@ namespace fuquizlearn_api.Services
         public async Task<ClassroomResponse> UpdateClassroom(ClassroomUpdate classroomUpdate, Account account)
         {
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomUpdate.Id);
-            if (account.Id != classroom.OwnerId && account.Role != Role.Admin)
+            if (classroom == null)
+                throw new KeyNotFoundException("Could not find Classroom");
+            if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
-            var newUpdate = _mapper.Map<Classroom>(classroomUpdate);
-            _context.Classrooms.Update(newUpdate);
+            _mapper.Map(classroomUpdate, classroom);
+            _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
-            return _mapper.Map<ClassroomResponse>(newUpdate);
+            return _mapper.Map<ClassroomResponse>(classroom);
         }
 
         private string generateVerificationToken()
         {
             var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-            return token;
+            return token.Substring(0, 10);
         }
+
     }
 }

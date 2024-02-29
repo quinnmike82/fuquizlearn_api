@@ -71,14 +71,43 @@ namespace fuquizlearn_api.Helpers
                         return true;
                     }
                 ));
-            CreateMap<QuizBank, QuizBankResponse>().ForMember(x => x.AuthorName, op => op.MapFrom(src => src.Author.Username));
+            CreateMap<QuizBank, QuizBankResponse>()
+                .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
+                {
+                    var mapper = context.Mapper;
+                    var accountResponse = mapper.Map<AccountResponse>(src.Author);
+                    return accountResponse;
+                }))
+            ;
             CreateMap<ClassroomCreate, Classroom>();
-            CreateMap<Classroom, ClassroomResponse>();
+            CreateMap<Classroom, ClassroomResponse>()
+            .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var accountResponse = mapper.Map<AccountResponse>(src.Account);
+                return accountResponse;
+            }))
+            ;
             CreateMap<ClassroomUpdate, Classroom>();
-            CreateMap<Post, PostResponse>();
+            CreateMap<Post, PostResponse>()
+            .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Author);
+                return commentResponse;
+            }))
+            ;
             CreateMap<PostCreate, Post>();
-            CreateMap<PostUpdate, Post>();
-
+            CreateMap<ClassroomCode, ClassroomCodeResponse>();
+            CreateMap<CommentCreate, Comment>();
+            CreateMap<Comment, CommentResponse>()
+            .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Author);
+                return commentResponse;
+            }))
+            .ForMember(x => x.PostId, op => op.MapFrom(src => src.Post.Id));
         }
     }
 }
