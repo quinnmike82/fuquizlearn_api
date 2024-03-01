@@ -23,6 +23,8 @@ public interface IQuizBankService
     void DeleteQuiz(int id, int quizId, Account account);
     QuizBankResponse UpdateQuiz(int id, int quizId, QuizUpdate model, Account account);
     QuizBankResponse AddQuiz(Account account, QuizCreate model, int id);
+    QuizBankResponse Rating(int id, Account account, int rating);
+    IEnumerable<QuizBankResponse> GetRelated(int id);
 }
 
 public class QuizBankService : IQuizBankService
@@ -93,10 +95,7 @@ public class QuizBankService : IQuizBankService
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
     {
         var quizBanks = await _context.QuizBanks.ToPagedAsync(options,
-            x =>
-                x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-
-
+            x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII),StringComparison.OrdinalIgnoreCase));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -107,6 +106,29 @@ public class QuizBankService : IQuizBankService
     public QuizBankResponse GetById(int id)
     {
         var quizBank = GetQuizBank(id);
+        return _mapper.Map<QuizBankResponse>(quizBank);
+    }
+
+    public IEnumerable<QuizBankResponse> GetRelated(int id)
+    {
+        var tags = GetQuizBank(id).Tags;
+        if(tags != null && tags.Count > 0)
+        {
+            var relatedQuizBanks = _context.QuizBanks.Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).ToList();
+            return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
+        }
+        return new List<QuizBankResponse>();
+    }
+
+    public QuizBankResponse Rating(int id, Account account, int rating)
+    {
+        var quizBank = GetQuizBank(id);
+        if (quizBank.Rating == null) { quizBank.Rating = new List<Rating>(); }
+        quizBank.Rating.RemoveAll(r => r.AccountId == account.Id);
+        quizBank.Rating.Add(new Rating (account.Id, rating));
+        _context.QuizBanks.Update(quizBank);
+        _context.SaveChanges();
+
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
