@@ -1,4 +1,5 @@
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Newtonsoft.Json;
@@ -8,7 +9,7 @@ namespace fuquizlearn_api.Services
 {
     public interface IGeminiAIService
     {
-        Task<GeminiAiResponse> GetTextOnly(string prompt, CancellationToken cancellationToken = default);
+        Task<GeminiAiResponse> GetTextOnly(QuizCreate prompt, CancellationToken cancellationToken = default);
 
         Task<GeminiAiResponse> GetTextAndImage(Stream file, string prompt,
             CancellationToken cancellationToken = default);
@@ -46,11 +47,12 @@ namespace fuquizlearn_api.Services
             return geminiAiResponse;
         }
 
-        public async Task<GeminiAiResponse> GetTextOnly(string prompt, CancellationToken cancellationToken)
+        public async Task<GeminiAiResponse> GetTextOnly(QuizCreate prompt, CancellationToken cancellationToken)
         {
-            Console.WriteLine("Hello World! " + _appSettings.GeminiAIApiKey);
+            string aiPrompt = prompt.Question + "\nAnwser is \n" + prompt.Answer + "\n Explain the question with max 60 words(refer to the question language)";
             var response = await _httpTextOnlyClient.PostAsJsonAsync($"?key={_appSettings.GeminiAIApiKey}",
-                GetTextOnlyRequest(prompt), cancellationToken);
+                GetTextOnlyRequest(aiPrompt), cancellationToken);
+            await Console.Out.WriteLineAsync(response.ToString());
             if (!response.IsSuccessStatusCode) return null;
 
             var responseContent = await response.Content.ReadAsStringAsync();
