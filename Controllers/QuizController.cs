@@ -51,10 +51,10 @@ namespace fuquizlearn_api.Controllers
             return Ok(new { message = "Quiz deleted successfully" });
         }
         
-        [HttpGet("text-only-input")]
-        public ActionResult<IEnumerable<QuizResponse>> GetTextResult(string prompt)
+        [HttpPost("text-only-input")]
+        public async Task<ActionResult<IEnumerable<QuizResponse>>> GetTextResult(QuizCreate prompt)
         {
-            var result = _geminiAIService.GetTextOnly(prompt);
+            var result = await _geminiAIService.GetTextOnly(prompt);
             return Ok(result);
         }
         

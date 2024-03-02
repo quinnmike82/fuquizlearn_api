@@ -126,12 +126,6 @@ using (var scope = app.Services.CreateScope())
     app.UsePathBase(prefix);
 
     app.MapControllers();
-    
-    // TODO: remove 2 line below
-    app.MapGet("/text-only-input", async (IGeminiAIService geminiService, string prompt) =>
-        await geminiService.GetTextOnly(prompt));
-    app.MapPost("/text-image-input", async (IFormFile formFile, IGeminiAIService geminiService, string prompt) =>
-        await geminiService.GetTextAndImage(formFile.OpenReadStream(), prompt));
 }
 
 app.Run();
