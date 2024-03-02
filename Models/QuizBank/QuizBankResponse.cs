@@ -13,6 +13,9 @@ public class QuizBankResponse
     public List<QuizResponse> Quizes { get; set; }
     public string? Description { get; set; }
     public Visibility Visibility { get; set; }
+    public List<Rating> Rating { get; set; }
+    public double AverageRating {  get; set; }
+    public List<string> Tags { get; set; }
     public DateTime Created { get; set; }
     public DateTime? Updated { get; set; }
 }

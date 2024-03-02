@@ -11,5 +11,6 @@ public class QuizBankCreate
     [Required] public QuizCreate[] Quizes { get; set; }
 
     public string? Description { get; set; }
+    public List<string>? Tags{ get; set; }
     public Visibility? Visibility { get; set; }
 }

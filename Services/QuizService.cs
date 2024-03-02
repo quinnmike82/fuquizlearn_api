@@ -1,16 +1,20 @@
 ﻿
-using fuquizlearn_api.Entities;
-using fuquizlearn_api.Helpers;
 using AutoMapper;
+using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
-using System.Security.Principal;
+using fuquizlearn_api.Extensions;
+using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Quiz;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services
 {
     public interface IQuizService
     {
-        IEnumerable<QuizResponse> GetAllQuizFromBank(int bankId, Account currentUser);
+        Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, PagedRequest options);
         QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
         QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
         void DeleteQuizInBank(int bankId, int quizId, Account account);
@@ -48,11 +52,16 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
         }
 
-        public IEnumerable<QuizResponse> GetAllQuizFromBank(int bankId, Account currentUser)
+        public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, PagedRequest options)
         {
             CheckQuizBank(bankId, currentUser);
-            var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId);
-            return _mapper.Map<IEnumerable<QuizResponse>>(quizes); ;
+            var quizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToPagedAsync(options,
+                q => q.Question.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+            return new PagedResponse<QuizResponse>
+            {
+                Data = _mapper.Map<IEnumerable<QuizResponse>>(quizes.Data),
+                Metadata = quizes.Metadata
+            };
         }
 
         public QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser)
@@ -71,7 +80,17 @@ namespace fuquizlearn_api.Services
         {
             var quizBank = _context.QuizBanks.Find(bankId);
             if (quizBank == null) throw new KeyNotFoundException("Could not find quizbank");
-            if (quizBank.Visibility == Visibility.Public || quizBank.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return quizBank;
+            if (quizBank.Visibility == Visibility.Public)
+            {
+                return quizBank;
+            }
+            else
+            {
+                if (currentUser != null)
+                {
+                    if (quizBank.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return quizBank;
+                }
+            }
             throw new UnauthorizedAccessException();
         }
 

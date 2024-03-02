@@ -30,6 +30,11 @@ public class DataContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<QuizBank>().Property(a => a.Rating)
+                .HasConversion(
+                    metadata => JsonConvert.SerializeObject(metadata),
+                    json => JsonConvert.DeserializeObject<List<Rating>>(json))
+                .HasColumnType("jsonb");
         modelBuilder.Entity<QuizBank>().HasMany(qb => qb.Quizes)
             .WithOne(q => q.QuizBank)
             .HasForeignKey(q => q.QuizBankId)

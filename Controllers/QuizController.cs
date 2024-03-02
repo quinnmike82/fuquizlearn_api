@@ -1,6 +1,7 @@
 ﻿using fuquizlearn_api.Authorization;
-using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Quiz;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,11 +20,11 @@ namespace fuquizlearn_api.Controllers
             this._geminiAIService = geminiAIService;
         }
 
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet("{bankId:int}")]
-        public ActionResult<IEnumerable<QuizResponse>> GetQuizFromBank(int bankId)
+        public async Task<ActionResult<PagedResponse<QuizResponse>>> GetQuizFromBank(int bankId, [FromQuery] PagedRequest options)
         {
-            var result = _quizService.GetAllQuizFromBank(bankId, Account);
+            var result = await _quizService.GetAllQuizFromBank(bankId, Account, options);
             return Ok(result);
         }
 

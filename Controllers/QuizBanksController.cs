@@ -1,6 +1,7 @@
 ﻿using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +21,7 @@ public class QuizBankController : BaseController
 
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<QuizBankResponse>>> GetAll([FromQuery] PagedRequest options)
+    public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetAll([FromQuery] PagedRequest options)
     {
         var result = await _quizBankService.GetAll(options);
         return Ok(result);
@@ -56,5 +57,21 @@ public class QuizBankController : BaseController
     {
         _quizBankService.Delete(id, Account);
         return Ok(new { message = "QuizBank deleted successfully" });
+    }
+
+    [Authorize]
+    [HttpPost("rating/{id:int}")]
+    public ActionResult<QuizBankResponse> Rating(int id, [FromQuery] RatingRequest rating)
+    {
+        var result = _quizBankService.Rating(id, Account, rating.Star);
+        return Ok(result);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("related/{id:int}")]
+    public ActionResult<IEnumerable<QuizBankResponse>> GetRelated(int id)
+    {
+        var result = _quizBankService.GetRelated(id);
+        return Ok(result);
     }
 }
