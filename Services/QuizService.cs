@@ -14,7 +14,7 @@ namespace fuquizlearn_api.Services
 {
     public interface IQuizService
     {
-        Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, PagedRequest options);
+        Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options);
         QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
         QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
         void DeleteQuizInBank(int bankId, int quizId, Account account);
@@ -52,7 +52,7 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
         }
 
-        public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, PagedRequest options)
+        public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options)
         {
             CheckQuizBank(bankId, currentUser);
             if (options.IsGetAll)

@@ -22,7 +22,7 @@ namespace fuquizlearn_api.Controllers
 
         [AllowAnonymous]
         [HttpGet("{bankId:int}")]
-        public async Task<ActionResult<PagedResponse<QuizResponse>>> GetQuizFromBank(int bankId, [FromQuery] PagedRequest options)
+        public async Task<ActionResult<PagedResponse<QuizResponse>>> GetQuizFromBank(int bankId, [FromQuery] QuizPagedRequest options)
         {
             var result = await _quizService.GetAllQuizFromBank(bankId, Account, options);
             return Ok(result);
