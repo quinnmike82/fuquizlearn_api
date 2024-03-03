@@ -55,12 +55,22 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, PagedRequest options)
         {
             CheckQuizBank(bankId, currentUser);
-            var quizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToPagedAsync(options,
-                q => q.Question.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+            if (options.IsGetAll)
+            {
+                var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId).ToList();
+                return new PagedResponse<QuizResponse>
+                {
+                    Data = _mapper.Map<IEnumerable<QuizResponse>>(quizes),
+                    Metadata = new PagedMetadata(0, quizes.Count, quizes.Count, false)
+                };
+            }
+
+            var pagedQuizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToPagedAsync(options,
+               q => q.Question.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
             return new PagedResponse<QuizResponse>
             {
-                Data = _mapper.Map<IEnumerable<QuizResponse>>(quizes.Data),
-                Metadata = quizes.Metadata
+                Data = _mapper.Map<IEnumerable<QuizResponse>>(pagedQuizes.Data),
+                Metadata = pagedQuizes.Metadata
             };
         }
 

@@ -12,6 +12,7 @@ public class PagedRequest
     public SortDirectionEnum SortDirection { get; set; } = SortDirectionEnum.Asc;
 
     public string Search { get; set; } = "";
+    public bool IsGetAll { get; set; } = false;
 
     public override string ToString()
     {
