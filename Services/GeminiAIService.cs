@@ -13,6 +13,8 @@ namespace fuquizlearn_api.Services
 
         Task<GeminiAiResponse> GetTextAndImage(Stream file, string prompt,
             CancellationToken cancellationToken = default);
+        Task<GeminiAiResponse> CheckCorrectAnswer(QuizCreate prompt, CancellationToken cancellationToken = default);
+        Task<GeminiAiResponse> GetAnwser(QuizCreate prompt, CancellationToken cancellationToken = default);
     }
 
     public class GeminiService : IGeminiAIService
@@ -50,8 +52,25 @@ namespace fuquizlearn_api.Services
         public async Task<GeminiAiResponse> GetTextOnly(QuizCreate prompt, CancellationToken cancellationToken)
         {
             string aiPrompt = prompt.Question + "\nAnwser is \n" + prompt.Answer + "\n Explain the question with max 60 words(refer to the question language)";
+            return await GetAIResponse(aiPrompt, cancellationToken);
+        }
+
+        public async Task<GeminiAiResponse> CheckCorrectAnswer(QuizCreate prompt, CancellationToken cancellationToken)
+        {
+            string aiPrompt = "Question and choices are: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language)";
+            return await GetAIResponse(aiPrompt, cancellationToken);
+        }
+
+        public async Task<GeminiAiResponse> GetAnwser(QuizCreate prompt, CancellationToken cancellationToken)
+        {
+            string aiPrompt = "Question is: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language)";
+            return await GetAIResponse(aiPrompt, cancellationToken);
+        }
+
+        public async Task<GeminiAiResponse> GetAIResponse(string prompt, CancellationToken cancellationToken)
+        {
             var response = await _httpTextOnlyClient.PostAsJsonAsync($"?key={_appSettings.GeminiAIApiKey}",
-                GetTextOnlyRequest(aiPrompt), cancellationToken);
+                GetTextOnlyRequest(prompt), cancellationToken);
             await Console.Out.WriteLineAsync(response.ToString());
             if (!response.IsSuccessStatusCode) return null;
 
