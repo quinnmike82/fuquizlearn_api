@@ -94,7 +94,7 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
     {
-        var quizBanks = await _context.QuizBanks.ToPagedAsync(options,
+        var quizBanks = await _context.QuizBanks.Include(q => q.Author).ToPagedAsync(options,
             x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII),StringComparison.OrdinalIgnoreCase));
         return new PagedResponse<QuizBankResponse>
         {
