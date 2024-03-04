@@ -4,6 +4,7 @@ using fuquizlearn_api.Enum;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
+using fuquizlearn_api.Models.QuizBank;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +15,7 @@ namespace fuquizlearn_api.Services
         Task<PostResponse> CreatePost(PostCreate post, Account account);
         Task<PostResponse> GetPostById(int id);
         Task<List<PostResponse>> GetAllPosts(int classroomId);
-        Task<PostResponse> UpdatePost(PostUpdate post, Account currentUser);
+        Task<PostResponse> UpdatePost(int PostId,PostUpdate post, Account currentUser);
         Task DeletePost(int id);
         Task<CommentResponse> CreateComment(int postId, CommentCreate comment, Account account);
         Task<CommentResponse> GetCommentById(int id);
@@ -64,12 +65,15 @@ namespace fuquizlearn_api.Services
             return postResponse;
         }
 
-        public async Task<PostResponse> UpdatePost(PostUpdate post, Account currentUser)
+        public async Task<PostResponse> UpdatePost(int postId,PostUpdate post, Account currentUser)
         {
-            var p = CheckPost(post.Id, currentUser);
-            _context.Entry(post).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return _mapper.Map<PostResponse>(post);
+            var p = await CheckPost(postId, currentUser);
+            _mapper.Map(post, p);
+
+            _context.Posts.Update(p);
+            _context.SaveChanges();
+
+            return _mapper.Map<PostResponse>(p);
         }
 
         public async Task DeletePost(int id)
@@ -94,11 +98,11 @@ namespace fuquizlearn_api.Services
             return post;
         }
 
-        private async Task<PostResponse> CheckPost(int postId, Account currentUser)
+        private async Task<Post> CheckPost(int postId, Account currentUser)
         {
             var post = await GetPost(postId);
             if (post == null) throw new KeyNotFoundException("Could not find Post");
-            if (post.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return _mapper.Map<PostResponse>(post);
+            if (post.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return _mapper.Map<Post>(post);
             throw new UnauthorizedAccessException();
         }
 

@@ -78,7 +78,8 @@ namespace fuquizlearn_api.Helpers
                     var accountResponse = mapper.Map<AccountResponse>(src.Author);
                     return accountResponse;
                 }))
-            ;
+                .ForMember(dest => dest.QuizCount,
+               opt => opt.MapFrom(src => src.Quizes.Count()));
             CreateMap<ClassroomCreate, Classroom>();
             CreateMap<Classroom, ClassroomResponse>()
             .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
@@ -98,6 +99,7 @@ namespace fuquizlearn_api.Helpers
             }))
             ;
             CreateMap<PostCreate, Post>();
+            CreateMap<PostUpdate, Post>();
             CreateMap<ClassroomCode, ClassroomCodeResponse>();
             CreateMap<CommentCreate, Comment>();
             CreateMap<Comment, CommentResponse>()
