@@ -60,9 +60,23 @@ namespace fuquizlearn_api.Controllers
         }
         
         [HttpPost("text-image-input")]
-        public ActionResult<QuizResponse> GetTextPictureResult(Stream file, string prompt)
+        public async Task<ActionResult<QuizResponse>> GetTextPictureResult(Stream file, string prompt)
         {
-            var result = _geminiAIService.GetTextAndImage(file, prompt);
+            var result = await _geminiAIService.GetTextAndImage(file, prompt);
+            return Ok(result);
+        }
+
+        [HttpPost("get-answer")]
+        public async Task<ActionResult<QuizResponse>> GetAnswer(QuizCreate prompt)
+        {
+            var result = await _geminiAIService.GetAnwser(prompt);
+            return Ok(result);
+        }
+
+        [HttpPost("get-correct-answer")]
+        public async Task<ActionResult<QuizResponse>> GetCorrectAnswer(QuizCreate prompt)
+        {
+            var result = await _geminiAIService.CheckCorrectAnswer(prompt);
             return Ok(result);
         }
     }

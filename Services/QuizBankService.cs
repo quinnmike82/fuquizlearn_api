@@ -94,7 +94,7 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
     {
-        var quizBanks = await _context.QuizBanks.Include(q => q.Author).ToPagedAsync(options,
+        var quizBanks = await _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes).ToPagedAsync(options,
             x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII),StringComparison.OrdinalIgnoreCase));
         return new PagedResponse<QuizBankResponse>
         {
@@ -164,7 +164,7 @@ public class QuizBankService : IQuizBankService
 
     private QuizBank GetQuizBank(int id)
     {
-        var quizBank = _context.QuizBanks.Include(i => i.Author).FirstOrDefault(i => i.Id == id);
+        var quizBank = _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefault(i => i.Id == id);
         if (quizBank == null) throw new KeyNotFoundException("Not found QuizBank");
         return quizBank;
     }
