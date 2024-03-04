@@ -10,6 +10,8 @@ namespace fuquizlearn_api.Models.Posts
         public string Content { get; set; }
         public AccountResponse? Author { get; set; }
         public List<CommentResponse>? Comments { get; set; }
+        public string? GameLink { get; set; }
+        public string? BankLink { get; set; }
         public DateTime Created { get; set; } 
         public DateTime? Updated { get; set; }
     }

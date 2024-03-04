@@ -98,6 +98,7 @@ namespace fuquizlearn_api.Helpers
             }))
             ;
             CreateMap<PostCreate, Post>();
+            CreateMap<PostUpdate, Post>();
             CreateMap<ClassroomCode, ClassroomCodeResponse>();
             CreateMap<CommentCreate, Comment>();
             CreateMap<Comment, CommentResponse>()

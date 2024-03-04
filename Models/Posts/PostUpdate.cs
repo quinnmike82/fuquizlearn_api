@@ -2,8 +2,9 @@
 {
     public class PostUpdate
     {
-        public int Id { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
+        public string? GameLink { get; set; }
+        public string? BankLink { get; set; }
     }
 }

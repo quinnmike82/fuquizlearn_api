@@ -52,7 +52,7 @@ namespace fuquizlearn_api.Controllers
         {
             try
             {
-                var updatedPost = await _postService.UpdatePost(postUpdate, Account);
+                var updatedPost = await _postService.UpdatePost(id, postUpdate, Account);
                 return Ok(updatedPost);
             }
             catch (KeyNotFoundException)
