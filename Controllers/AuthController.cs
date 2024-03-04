@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace fuquizlearn_api.Controllers;
 
 [Authorize]
-[Route("auth")]
+[Route("api/auth")]
 [ApiController]
 public class AuthController : BaseController
 {
