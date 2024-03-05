@@ -9,7 +9,6 @@ namespace fuquizlearn_api.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("[controller]")]
 public class QuizBankController : BaseController
 {
     private readonly IQuizBankService _quizBankService;
@@ -24,6 +23,14 @@ public class QuizBankController : BaseController
     public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetAll([FromQuery] PagedRequest options)
     {
         var result = await _quizBankService.GetAll(options);
+        return Ok(result);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("GetMyQuizBank")]
+    public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetMy([FromQuery] PagedRequest options)
+    {
+        var result = await _quizBankService.GetMy(options, Account);
         return Ok(result);
     }
 
