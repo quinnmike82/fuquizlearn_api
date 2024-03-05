@@ -126,7 +126,8 @@ public class QuizBankService : IQuizBankService
         var tags = GetQuizBank(id).Tags;
         if(tags != null && tags.Count > 0)
         {
-            var relatedQuizBanks = _context.QuizBanks.Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).ToList();
+            var relatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+                .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
             return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
         }
         return new List<QuizBankResponse>();
