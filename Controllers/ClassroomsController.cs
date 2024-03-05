@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace fuquizlearn_api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
     [ApiController]
     public class ClassroomsController : BaseController
     {
@@ -52,11 +51,27 @@ namespace fuquizlearn_api.Controllers
                 await _classroomService.AddMember(addMember, Account);
                 return Ok();
         }
+        [HttpPost("batchaddmember/{classroomId}")]
+        [Authorize]
+        public async Task<IActionResult> BatchAddMember(int classroomId, [FromBody] BatchMemberRequest batchMemberRequest)
+        {
+                await _classroomService.BatchAddMember(classroomId, Account, batchMemberRequest.MemberIds);
+                return Ok();
+        }
+
         [HttpDelete("removemember/{memberId}/{classroomId}")]
         [Authorize]
         public async Task<IActionResult> RemoveMember(int memberId, int classroomId)
         {
                 await _classroomService.RemoveMember(memberId, classroomId, Account);
+                return Ok();
+        }
+        
+        [HttpDelete("batchremovemember/{classroomId}")]
+        [Authorize]
+        public async Task<IActionResult> BatchRemoveMember(int classroomId, [FromBody] BatchMemberRequest batchMemberRequest)
+        {
+                await _classroomService.BatchRemoveMember(classroomId, Account, batchMemberRequest.MemberIds);
                 return Ok();
         }
 
