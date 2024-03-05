@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace fuquizlearn_api.Controllers
 {
     [Controller]
+    [Route("api/[controller]")]
     public abstract class BaseController : ControllerBase
     {
         // returns the current authenticated account (null if not logged in)

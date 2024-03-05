@@ -110,6 +110,8 @@ namespace fuquizlearn_api.Helpers
                 return commentResponse;
             }))
             .ForMember(x => x.PostId, op => op.MapFrom(src => src.Post.Id));
+
+            CreateMap<LearnedProgress, ProgressResponse>();
         }
     }
 }

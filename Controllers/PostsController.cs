@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace fuquizlearn_api.Controllers
 {
     [ApiController]
-    [Route("api/posts")]
     [Authorize]
     public class PostController : BaseController
     {

@@ -9,7 +9,6 @@ namespace fuquizlearn_api.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
     public class QuizController : BaseController
     {
         private readonly IQuizService _quizService;
