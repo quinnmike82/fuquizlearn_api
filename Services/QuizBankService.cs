@@ -25,6 +25,7 @@ public interface IQuizBankService
     QuizBankResponse AddQuiz(Account account, QuizCreate model, int id);
     QuizBankResponse Rating(int id, Account account, int rating);
     IEnumerable<QuizBankResponse> GetRelated(int id);
+    Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -109,12 +110,24 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
+    public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
+    {
+        var quizBanks = await _context.QuizBanks.Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
+            x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+        return new PagedResponse<QuizBankResponse>
+        {
+            Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+            Metadata = quizBanks.Metadata
+        };
+    }
+
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
         var tags = GetQuizBank(id).Tags;
         if(tags != null && tags.Count > 0)
         {
-            var relatedQuizBanks = _context.QuizBanks.Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).ToList();
+            var relatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+                .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
             return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
         }
         return new List<QuizBankResponse>();
