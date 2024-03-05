@@ -26,6 +26,8 @@ public interface IQuizBankService
     QuizBankResponse Rating(int id, Account account, int rating);
     IEnumerable<QuizBankResponse> GetRelated(int id);
     Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
+    Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
+    Task<ProgressResponse> GetProgress(int quizbankId, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -121,6 +123,17 @@ public class QuizBankService : IQuizBankService
         };
     }
 
+    public async Task<ProgressResponse> GetProgress(int quizbankId, Account account)
+    {
+        GetQuizBank(quizbankId);
+        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        if (progress == null)
+        {
+            throw new KeyNotFoundException("Not found progress");
+        }
+        return _mapper.Map<ProgressResponse>(progress);
+    }
+
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
         var tags = GetQuizBank(id).Tags;
@@ -143,6 +156,35 @@ public class QuizBankService : IQuizBankService
         _context.SaveChanges();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
+    }
+
+    public async Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest)
+    {
+        GetQuizBank(quizbankId);
+        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        if (progress == null)
+        {
+            progress = new LearnedProgress
+            {
+                AccountId = account.Id,
+                QuizBankId = quizbankId,
+                CurrentQuizId = saveProgressRequest.CurrentQuizId,
+                LearnedQuizIds = saveProgressRequest.LearnedQuizIds,
+                LearnMode = saveProgressRequest.LearnMode,
+                Created = DateTime.UtcNow,
+            };
+            await _context.LearnedProgress.AddAsync(progress);
+        }
+        else
+        {
+            progress.CurrentQuizId = saveProgressRequest.CurrentQuizId;
+            progress.LearnedQuizIds = saveProgressRequest.LearnedQuizIds;
+            progress.LearnMode = saveProgressRequest.LearnMode;
+            _context.LearnedProgress.Update(progress);
+        }
+        await _context.SaveChangesAsync();
+        return _mapper.Map<ProgressResponse>(progress);
+
     }
 
     public QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser)

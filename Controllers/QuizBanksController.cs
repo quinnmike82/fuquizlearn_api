@@ -1,4 +1,5 @@
 ﻿using fuquizlearn_api.Authorization;
+using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
@@ -79,6 +80,22 @@ public class QuizBankController : BaseController
     public ActionResult<IEnumerable<QuizBankResponse>> GetRelated(int id)
     {
         var result = _quizBankService.GetRelated(id);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("saveprogress/{quizbankId:int}")]
+    public async Task<ActionResult<ProgressResponse>> SaveProgress(int quizbankId, [FromBody] SaveProgressRequest saveProgressRequest)
+    {
+        var result = await _quizBankService.SaveProgress(quizbankId, Account, saveProgressRequest);
+        return Ok(result);
+    }
+    
+    [Authorize]
+    [HttpGet("getprogress/{quizbankId:int}")]
+    public async Task<ActionResult<ProgressResponse>> GetProgress(int quizbankId)
+    {
+        var result = await _quizBankService.GetProgress(quizbankId, Account);
         return Ok(result);
     }
 }
