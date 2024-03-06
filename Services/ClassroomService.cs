@@ -31,6 +31,8 @@ namespace fuquizlearn_api.Services
         Task JoinClassroomWithCode(string classroomCode, Account account);
         Task<QuizBankResponse> AddQuizBank(int classroomId, QuizBankCreate model, Account account);
         Task CopyQuizBank(int quizbankId, int classroomId, Account account);
+        Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds);
+        Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
     }
     public class ClassroomService : IClassroomService
     {
@@ -98,6 +100,67 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
 
             return _mapper.Map<QuizBankResponse>(quizBank);
+        }
+
+        public async Task BatchAddMember(int classroomId, Account account, List<int> memberIds)
+        {
+            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId);
+            if (classroom == null)
+                throw new KeyNotFoundException("Cound not find Classroom");
+            if (!(classroom.Account.Id == account.Id || account.Role != Role.Admin))
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            memberIds = memberIds.Distinct().ToList();
+
+            if (classroom.AccountIds != null)
+            {
+                var wasMember = memberIds.Where(id => classroom.AccountIds.Contains(id));
+                if (wasMember.Any())
+                {
+                    throw new KeyNotFoundException($"these userId already be classroom's members:\n {wasMember}");
+                }
+
+                classroom.AccountIds = classroom.AccountIds.Concat(memberIds).ToArray();
+            }
+            else
+            {
+                classroom.AccountIds = memberIds.ToArray();
+            }
+            var classroomMembers = memberIds.Select(id => new ClassroomMember { AccountId = id, ClassroomId = classroomId });
+            _context.ClassroomsMembers.AddRange(classroomMembers);
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds)
+        {
+            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == classroomId);
+            if (classroom == null)
+                throw new KeyNotFoundException("Cound not find Classroom");
+            if (!(classroom.Account.Id == account.Id || account.Role != Role.Admin))
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            if (classroom.AccountIds == null)
+            {
+                throw new AppException("Classroom has no member");
+            }
+
+            var isNotMember = memberIds.Where(id => !classroom.AccountIds.Contains(id));
+
+            if (isNotMember.Any())
+            {
+                throw new KeyNotFoundException($"Could not find these userId in classroom's members:\n {isNotMember}");
+            }
+
+            classroom.AccountIds = classroom.AccountIds.Where(id => !memberIds.Contains(id)).ToArray();
+            var classroomMembers = await _context.ClassroomsMembers.Where(cm => cm.ClassroomId == classroomId && memberIds.Contains(cm.AccountId)).ToArrayAsync();
+            _context.ClassroomsMembers.RemoveRange(classroomMembers);
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
         }
 
         public async Task CopyQuizBank(int quizbankId, int classroomId, Account account)

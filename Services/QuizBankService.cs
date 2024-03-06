@@ -25,6 +25,9 @@ public interface IQuizBankService
     QuizBankResponse AddQuiz(Account account, QuizCreate model, int id);
     QuizBankResponse Rating(int id, Account account, int rating);
     IEnumerable<QuizBankResponse> GetRelated(int id);
+    Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
+    Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
+    Task<ProgressResponse> GetProgress(int quizbankId, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -109,12 +112,35 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
+    public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
+    {
+        var quizBanks = await _context.QuizBanks.Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
+            x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+        return new PagedResponse<QuizBankResponse>
+        {
+            Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+            Metadata = quizBanks.Metadata
+        };
+    }
+
+    public async Task<ProgressResponse> GetProgress(int quizbankId, Account account)
+    {
+        GetQuizBank(quizbankId);
+        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        if (progress == null)
+        {
+            throw new KeyNotFoundException("Not found progress");
+        }
+        return _mapper.Map<ProgressResponse>(progress);
+    }
+
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
         var tags = GetQuizBank(id).Tags;
         if(tags != null && tags.Count > 0)
         {
-            var relatedQuizBanks = _context.QuizBanks.Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).ToList();
+            var relatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+                .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
             return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
         }
         return new List<QuizBankResponse>();
@@ -130,6 +156,35 @@ public class QuizBankService : IQuizBankService
         _context.SaveChanges();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
+    }
+
+    public async Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest)
+    {
+        GetQuizBank(quizbankId);
+        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        if (progress == null)
+        {
+            progress = new LearnedProgress
+            {
+                AccountId = account.Id,
+                QuizBankId = quizbankId,
+                CurrentQuizId = saveProgressRequest.CurrentQuizId,
+                LearnedQuizIds = saveProgressRequest.LearnedQuizIds,
+                LearnMode = saveProgressRequest.LearnMode,
+                Created = DateTime.UtcNow,
+            };
+            await _context.LearnedProgress.AddAsync(progress);
+        }
+        else
+        {
+            progress.CurrentQuizId = saveProgressRequest.CurrentQuizId;
+            progress.LearnedQuizIds = saveProgressRequest.LearnedQuizIds;
+            progress.LearnMode = saveProgressRequest.LearnMode;
+            _context.LearnedProgress.Update(progress);
+        }
+        await _context.SaveChangesAsync();
+        return _mapper.Map<ProgressResponse>(progress);
+
     }
 
     public QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser)
