@@ -130,5 +130,19 @@ namespace fuquizlearn_api.Controllers
                 var result = await _classroomService.UpdateClassroom(classroomUpdate, Account);
                 return Ok(result);
         }
+        [HttpGet("getByAccountId/{id}")]
+        [Authorize]
+        public async Task<ActionResult<List<ClassroomResponse>>> GetCurrentAccountClassroom(int id)
+        {
+            var result = await _classroomService.GetAllClassroomsByUserId(id);
+            return Ok(result);
+        }
+        [HttpGet("getCurrent")]
+        [Authorize]
+        public async Task<ActionResult<List<ClassroomResponse>>> GetCurrentClassroom()
+        {
+           var result = await _classroomService.GetAllClassroomsByAccountId(Account);
+            return Ok(result);
+        }
     }
 }
