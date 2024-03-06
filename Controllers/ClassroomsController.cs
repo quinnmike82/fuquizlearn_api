@@ -2,6 +2,7 @@
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -38,9 +39,9 @@ namespace fuquizlearn_api.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<List<ClassroomResponse>>> GetAllClassrooms()
+        public async Task<ActionResult<List<ClassroomResponse>>> GetAllClassrooms([FromQuery] PagedRequest options)
         {
-                var result = await _classroomService.GetAllClassrooms();
+                var result = await _classroomService.GetAllClassrooms(options);
                 return Ok(result);
         }
 

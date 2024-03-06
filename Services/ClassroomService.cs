@@ -2,17 +2,22 @@
 using AutoMapper.Execution;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
+using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Migrations;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Principal;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services
 {
@@ -20,7 +25,7 @@ namespace fuquizlearn_api.Services
     {
         Task<ClassroomResponse> CreateClassroom(ClassroomCreate classroom, Account account);
         Task<ClassroomResponse> GetClassroomById(int id);
-        Task<List<ClassroomResponse>> GetAllClassrooms();
+        Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options);
         Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id);
         Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account acncout);
         Task<ClassroomResponse> UpdateClassroom(ClassroomUpdate classroomUpdate, Account account);
@@ -258,10 +263,15 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<List<ClassroomCodeResponse>>(classroom.ClassroomCodes);
         }
 
-        public async Task<List<ClassroomResponse>> GetAllClassrooms()
+        public async Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options)
         {
-            var classrooms = await _context.Classrooms.Where(i => i.DeletedAt == null).ToListAsync();
-            return _mapper.Map<List<ClassroomResponse>>(classrooms);
+            var pagedQuizes = await _context.Classrooms.Include(c => c.Account).ToPagedAsync(options,
+               q => q.Classname.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+            return new PagedResponse<ClassroomResponse>
+            {
+                Data = _mapper.Map<IEnumerable<ClassroomResponse>>(pagedQuizes.Data),
+                Metadata = pagedQuizes.Metadata
+            };
         }
 
         public async Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account account)
