@@ -108,25 +108,25 @@ namespace fuquizlearn_api.Services
             {
                 var quizes = await _context.Quizes.Where(q => ids.Contains(q.Id)).ToListAsync();
                 var quizResponses = _mapper.Map<List<QuizResponse>>(quizes);
-                objects.Add("Quizes", quizResponses.Cast<object>().ToList());
+                objects.Add("quizzes", quizResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(QuizBank))
             {
-                var quizBanks = await _context.QuizBanks.Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizBanks = await _context.QuizBanks.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var quizBankResponses = _mapper.Map<List<QuizBankResponse>>(quizBanks);
-                objects.Add("QuizBanks", quizBankResponses.Cast<object>().ToList());
+                objects.Add("quizBanks", quizBankResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(Post))
             {
-                var posts = await _context.Posts.Where(q => ids.Contains(q.Id)).ToListAsync();
+                var posts = await _context.Posts.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var postResponses = _mapper.Map<List<PostResponse>>(posts);
-                objects.Add("Posts", postResponses.Cast<object>().ToList());
+                objects.Add("posts", postResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(Classroom))
             {
-                var classrooms = await _context.Classrooms.Where(q => ids.Contains(q.Id)).ToListAsync();
+                var classrooms = await _context.Classrooms.Include(c => c.Account).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var classroomResponses = _mapper.Map<List<ClassroomResponse>>(classrooms);
-                objects.Add("Classrooms", classroomResponses.Cast<object>().ToList());
+                objects.Add("classrooms", classroomResponses.Cast<object>().ToList());
             }
 
             return objects;
