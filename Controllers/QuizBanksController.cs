@@ -98,4 +98,12 @@ public class QuizBankController : BaseController
         var result = await _quizBankService.GetProgress(quizbankId, Account);
         return Ok(result);
     }
+
+    [HttpPost("copyquizbank/{quizbankId}")]
+    [Authorize]
+    public async Task<ActionResult<QuizBankResponse>> CopyQuizBank(int quizbankId)
+    {
+        var result = await _quizBankService.CopyQuizBank(quizbankId, Account);
+        return Ok(result);
+    }
 }

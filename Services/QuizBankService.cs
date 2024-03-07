@@ -1,6 +1,4 @@
-﻿using System.Text;
-using System.Web;
-using AutoMapper;
+﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
@@ -10,6 +8,8 @@ using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services;
 
@@ -28,6 +28,7 @@ public interface IQuizBankService
     Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
     Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
     Task<ProgressResponse> GetProgress(int quizbankId, Account account);
+    Task<QuizBankResponse> CopyQuizBank(int quizbankId, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -54,6 +55,33 @@ public class QuizBankService : IQuizBankService
         _context.SaveChanges();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
+    }
+
+    public async Task<QuizBankResponse> CopyQuizBank(int quizbankId, Account account)
+    {
+        var quizBank = GetQuizBank(quizbankId);
+        var newBank = new QuizBank
+        {
+            BankName = quizBank.BankName,
+            Description = quizBank.Description,
+            Visibility = quizBank.Visibility,
+            Author = account
+        };
+        newBank.Quizes = new List<Quiz>();
+        foreach (var quiz in quizBank.Quizes)
+        {
+            var newQuiz = new QuizCreate
+            {
+                Answer = quiz.Answer,
+                Explaination = quiz.Explaination,
+                Question = quiz.Question
+            };
+            newBank.Quizes.Add(_mapper.Map<Quiz>(newQuiz));
+        }
+        _context.QuizBanks.Add(newBank);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<QuizBankResponse>(newBank);
     }
 
     public QuizBankResponse Create(Account currentUser, QuizBankCreate model)
@@ -98,7 +126,7 @@ public class QuizBankService : IQuizBankService
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
     {
         var quizBanks = await _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes).ToPagedAsync(options,
-            x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII),StringComparison.OrdinalIgnoreCase));
+            x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -137,7 +165,7 @@ public class QuizBankService : IQuizBankService
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
         var tags = GetQuizBank(id).Tags;
-        if(tags != null && tags.Count > 0)
+        if (tags != null && tags.Count > 0)
         {
             var relatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
                 .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
@@ -151,7 +179,7 @@ public class QuizBankService : IQuizBankService
         var quizBank = GetQuizBank(id);
         if (quizBank.Rating == null) { quizBank.Rating = new List<Rating>(); }
         quizBank.Rating.RemoveAll(r => r.AccountId == account.Id);
-        quizBank.Rating.Add(new Rating (account.Id, rating));
+        quizBank.Rating.Add(new Rating(account.Id, rating));
         _context.QuizBanks.Update(quizBank);
         _context.SaveChanges();
 
