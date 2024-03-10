@@ -27,7 +27,7 @@ namespace fuquizlearn_api.Services
         Task<ClassroomResponse> GetClassroomById(int id);
         Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options);
         Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id);
-        Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account acncout);
+        Task<PagedResponse<ClassroomResponse>> GetAllClassroomsByAccountId(PagedRequest options, Account account);
         Task<ClassroomResponse> UpdateClassroom(ClassroomUpdate classroomUpdate, Account account);
         Task AddMember(AddMember addMember, Account account);
         Task RemoveMember(int memberId, int classroomId, Account account);
@@ -274,16 +274,22 @@ namespace fuquizlearn_api.Services
             };
         }
 
-        public async Task<List<ClassroomResponse>> GetAllClassroomsByAccountId(Account account)
+        public async Task<PagedResponse<ClassroomResponse>> GetAllClassroomsByAccountId(PagedRequest options, Account account)
         {
-            var classroomsOwned = await _context.Classrooms.Where(i => i.Account.Id == account.Id).ToListAsync();
-            var classroomsJoined = await _context.ClassroomsMembers
+            var classroomsOwned = _context.Classrooms.Where(i => i.Account.Id == account.Id);
+            var classroomsJoined = _context.ClassroomsMembers
                                                      .Where(i => i.AccountId == account.Id)
-                                                     .Select(cm => cm.Classroom)
-                                                     .ToListAsync();
+                                                     .Select(cm => cm.Classroom);
 
-            var allClassrooms = classroomsOwned.Concat(classroomsJoined).ToList();
-            return _mapper.Map<List<ClassroomResponse>>(allClassrooms);
+            var allClassrooms = await classroomsOwned.Concat(classroomsJoined)
+                .ToPagedAsync(options,
+                x => x.Classname.Contains(options.Search,StringComparison.OrdinalIgnoreCase));
+
+            return new PagedResponse<ClassroomResponse>
+            {
+                Data = _mapper.Map<IEnumerable<ClassroomResponse>>(allClassrooms.Data),
+                Metadata = allClassrooms.Metadata
+            };
         }
 
         public async Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id)

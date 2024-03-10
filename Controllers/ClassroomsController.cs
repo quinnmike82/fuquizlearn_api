@@ -140,9 +140,9 @@ namespace fuquizlearn_api.Controllers
         }
         [HttpGet("getCurrent")]
         [Authorize]
-        public async Task<ActionResult<List<ClassroomResponse>>> GetCurrentClassroom()
+        public async Task<ActionResult<List<ClassroomResponse>>> GetCurrentClassroom([FromQuery] PagedRequest options)
         {
-           var result = await _classroomService.GetAllClassroomsByAccountId(Account);
+           var result = await _classroomService.GetAllClassroomsByAccountId(options, Account);
             return Ok(result);
         }
     }
