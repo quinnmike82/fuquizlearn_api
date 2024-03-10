@@ -283,7 +283,7 @@ namespace fuquizlearn_api.Services
 
             var allClassrooms = await classroomsOwned.Concat(classroomsJoined)
                 .ToPagedAsync(options,
-                x => x.Classname.Contains(options.Search,StringComparison.OrdinalIgnoreCase));
+                x => x.Classname.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
 
             return new PagedResponse<ClassroomResponse>
             {
