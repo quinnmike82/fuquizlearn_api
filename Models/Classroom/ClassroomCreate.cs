@@ -6,5 +6,6 @@ namespace fuquizlearn_api.Models.Classroom
     {
         public string Classname { get; set; }
         public string Description { get; set; }
+        public bool isStudentAllowInvite { get; set; } = false;
     }
 }
