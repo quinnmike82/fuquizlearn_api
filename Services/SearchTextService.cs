@@ -108,13 +108,13 @@ namespace fuquizlearn_api.Services
 
             if (entityType == typeof(Quiz))
             {
-                var quizes = await _context.Quizes.Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizes = await _context.Quizes.Include(q => q.QuizBank).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var quizResponses = _mapper.Map<List<QuizResponse>>(quizes);
                 objects.Add("quizzes", quizResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(QuizBank))
             {
-                var quizBanks = await _context.QuizBanks.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var quizBankResponses = _mapper.Map<List<QuizBankResponse>>(quizBanks);
                 objects.Add("quizBanks", quizBankResponses.Cast<object>().ToList());
             }
