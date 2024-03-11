@@ -88,6 +88,10 @@ namespace fuquizlearn_api.Helpers
                 var accountResponse = mapper.Map<AccountResponse>(src.Account);
                 return accountResponse;
             }))
+            .ForMember(dest => dest.StudentNumber, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                return src.AccountIds?.Length;
+            }))
             ;
             CreateMap<ClassroomUpdate, Classroom>();
             CreateMap<Post, PostResponse>()
