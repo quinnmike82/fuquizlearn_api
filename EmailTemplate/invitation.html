@@ -48,22 +48,6 @@
             <tbody>
               <tr>
                 <td>
-                  <img
-                    alt="Vercel"
-                    src="https://react-email-demo-ijnnx5hul-resend.vercel.app/static/vercel-logo.png"
-                    width="40"
-                    height="37"
-                    style="
-                      display: block;
-                      outline: none;
-                      border: none;
-                      text-decoration: none;
-                      margin-left: auto;
-                      margin-right: auto;
-                      margin-top: 0px;
-                      margin-bottom: 0px;
-                    "
-                  />
                   <p
                     style="
                       font-size: 14px;
@@ -81,10 +65,10 @@
             </tbody>
           </table>
           <p style="font-size: 14px; line-height: 24px; margin: 14px 0; color: rgb(0, 0, 0)">
-            Hello <strong>{user-name}</strong>,
+            Hello <strong>{to-user-name}</strong>,
           </p>
           <p style="font-size: 14px; line-height: 24px; margin: 14px 0; color: rgb(0, 0, 0)">
-            User <strong>{user-email}</strong> has invite you to <strong>{classroom-name}</strong> classroom.
+            User <strong>{from-user-name}</strong> has invite you to <strong>{classroom-name}</strong> classroom.
           </p>
           <table
             align="center"
@@ -99,7 +83,7 @@
               <tr>
                 <td>
                   <a
-                    href="https://vercel.com/teams/invite/foo"
+                    href="{link}"
                     target="_blank"
                     style="
                       p-x: 20px;
