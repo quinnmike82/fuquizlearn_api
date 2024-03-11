@@ -61,6 +61,13 @@ namespace fuquizlearn_api.Helpers
                     }
                 ));
             CreateMap<Quiz, QuizResponse>();
+            CreateMap<Quiz, QuizSearchResponse>()
+                .ForMember(dest => dest.QuizBank, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var accountResponse = mapper.Map<QuizBankResponse>(src.QuizBank);
+                return accountResponse;
+            }));
 
             CreateMap<QuizBankCreate, QuizBank>().ForMember(qb => qb.Visibility, op => op.MapFrom(src => src.Visibility ?? Visibility.Public));
             CreateMap<QuizBankUpdate, QuizBank>().ForAllMembers(x => x.Condition(
