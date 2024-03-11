@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
@@ -40,6 +41,7 @@ namespace fuquizlearn_api.Services
                 { typeof(QuizBank), new[] { "\"BankName\"", "\"Description\"", "array_to_string(\"Tags\", ' ')" } },
                 { typeof(Post), new[] { "\"Title\"", "\"Content\"" } },
                 { typeof(Classroom), new[] { "\"Classname\"", "\"Description\"" } },
+                { typeof(Account), new[] { "\"Username\"", "\"Email\"" } },
             };
 
             foreach (var (entityType, propertyNames) in entitiesToSearch)
@@ -127,6 +129,12 @@ namespace fuquizlearn_api.Services
                 var classrooms = await _context.Classrooms.Include(c => c.Account).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var classroomResponses = _mapper.Map<List<ClassroomResponse>>(classrooms);
                 objects.Add("classrooms", classroomResponses.Cast<object>().ToList());
+            }
+            else if (entityType == typeof(Account))
+            {
+                var accounts = await _context.Accounts.Where(q => ids.Contains(q.Id)).ToListAsync();
+                var accountResponses = _mapper.Map<List<AccountResponse>>(accounts);
+                objects.Add("users", accountResponses.Cast<object>().ToList());
             }
 
             return objects;
