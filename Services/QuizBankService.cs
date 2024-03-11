@@ -142,7 +142,7 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
     {
-        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
+        var quizBanks = await _context.QuizBanks.Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
             x => x.BankName.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
         return new PagedResponse<QuizBankResponse>
         {
