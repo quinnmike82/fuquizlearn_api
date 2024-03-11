@@ -1,21 +1,15 @@
 ﻿using AutoMapper;
-using AutoMapper.Execution;
 using fuquizlearn_api.Entities;
-using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
-using fuquizlearn_api.Migrations;
 using fuquizlearn_api.Models.Classroom;
-using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Security.Cryptography;
-using System.Security.Principal;
 using System.Text;
 using System.Web;
 
@@ -39,16 +33,22 @@ namespace fuquizlearn_api.Services
         Task CopyQuizBank(int quizbankId, int classroomId, Account account);
         Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds);
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
+        Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
     }
     public class ClassroomService : IClassroomService
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
+        private readonly IHelperFrontEnd _helperFrontEnd;
 
-        public ClassroomService(DataContext context, IMapper mapper)
+
+        public ClassroomService(DataContext context, IMapper mapper, IHelperFrontEnd helperFrontEnd, IEmailService emailService)
         {
             _context = context;
             _mapper = mapper;
+            _helperFrontEnd = helperFrontEnd;
+            _emailService = emailService;
         }
         public async Task AddMember(AddMember addMember, Account account)
         {
@@ -58,7 +58,7 @@ namespace fuquizlearn_api.Services
                 throw new KeyNotFoundException("Could not find Classroom");
             }
             var check = await _context.ClassroomsMembers.FirstOrDefaultAsync(c => c.ClassroomId == addMember.classroomId && c.AccountId == addMember.memberId);
-            if(check != null)
+            if (check != null)
                 throw new AppException("ClassroomMember already exists.");
             if (classRoom.Account.Id != account.Id)
             {
@@ -202,7 +202,7 @@ namespace fuquizlearn_api.Services
             _context.QuizBanks.Update(newBank);
             if (classroom.BankIds != null)
                 classroom.BankIds.Append(newBank.Id);
-            else classroom.BankIds = new int[]{newBank.Id};
+            else classroom.BankIds = new int[] { newBank.Id };
             _context.QuizBanks.Update(newBank);
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
@@ -217,7 +217,7 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<ClassroomResponse>(newClass);
         }
 
-        public async Task DeleteClassroom(int id, Account account)  
+        public async Task DeleteClassroom(int id, Account account)
         {
             var classRoom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
             if (classRoom == null)
@@ -235,8 +235,8 @@ namespace fuquizlearn_api.Services
 
         public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync( i => i.Id == classroomId);
-            if(classroom == null)
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
             if (classroom.isStudentAllowInvite)
             {
@@ -317,7 +317,7 @@ namespace fuquizlearn_api.Services
 
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
         {
-            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any( c => c.Code == classroomCode));
+            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode));
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
@@ -328,7 +328,7 @@ namespace fuquizlearn_api.Services
                 throw new AppException("Already joined");
             }
             var code = classroom.ClassroomCodes.Single(i => i.Code == classroomCode);
-            if(code.IsExpired)
+            if (code.IsExpired)
                 throw new AppException("Invalid Code");
             var classroomMember = new ClassroomMember
             {
@@ -349,7 +349,7 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task RemoveMember(int memberId, int classroomId,Account account)
+        public async Task RemoveMember(int memberId, int classroomId, Account account)
         {
             var classroomMember = await _context.ClassroomsMembers.FirstOrDefaultAsync(i => i.AccountId == memberId && i.ClassroomId == classroomId);
             if (classroomMember == null)
@@ -357,7 +357,7 @@ namespace fuquizlearn_api.Services
                 throw new KeyNotFoundException("Could not find Classroom");
             }
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
-            if(account.Id != classroom?.Account.Id && account.Role != Role.Admin)
+            if (account.Id != classroom?.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
             int indexToRemove = Array.IndexOf(classroom.AccountIds, memberId);
 
@@ -373,6 +373,55 @@ namespace fuquizlearn_api.Services
             }
             _context.ClassroomsMembers.Remove(classroomMember);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account)
+        {
+            var classroom = await _context.Classrooms.FirstOrDefaultAsync(c => c.Id == classroomId);
+            if (classroom == null)
+            {
+                throw new KeyNotFoundException("Could not find Classroom");
+            }
+
+            if (classroom.Account.Id != account.Id && !classroom.AccountIds.Contains(account.Id))
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+
+            var memberIds = batchMemberRequest.MemberIds.Distinct();
+
+            if (classroom.AccountIds != null)
+            {
+                var wasMember = memberIds.Where(id => classroom.AccountIds.Contains(id));
+                if (wasMember.Any())
+                {
+                    throw new KeyNotFoundException($"these userId already be classroom's members:\n {wasMember}");
+                }
+            }
+
+            foreach (var memberId in memberIds)
+            {
+                var member = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == memberId);
+                if (member == null)
+                {
+                    throw new KeyNotFoundException($"Can not find user with Id: {memberId}");
+                }
+
+                string code = generateVerificationToken();
+                var classroomCode = new ClassroomCode
+                {
+                    Code = code,
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Classroom = classroom
+                };
+
+                classroom.ClassroomCodes ??= new List<ClassroomCode>();
+                classroom.ClassroomCodes.Add(classroomCode);
+                _context.Classrooms.Update(classroom);
+                await _context.SaveChangesAsync();
+
+                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classroom?joinCode={code}"), classroom.Classname);
+            }
         }
 
         public async Task<ClassroomResponse> UpdateClassroom(ClassroomUpdate classroomUpdate, Account account)
@@ -392,6 +441,26 @@ namespace fuquizlearn_api.Services
         {
             var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
             return token.Substring(0, 10);
+        }
+
+        private async Task sendInvitationEmail(Account toAccount, Account fromAccount, string invitationLink, string classroomName)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var projectDirectory =
+                Path.Combine(assemblyDirectory, "..", "..", "..");
+            var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "invitation.html");
+            var htmlContent = File.ReadAllText(htmlFilePath);
+            htmlContent = htmlContent.Replace("{to-user-name}", toAccount.Username);
+            htmlContent = htmlContent.Replace("{from-user-name}", fromAccount.Username);
+            htmlContent = htmlContent.Replace("{link}", invitationLink);
+            htmlContent = htmlContent.Replace("{classroom-name}", classroomName);
+            htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+            await _emailService.SendAsync(
+                toAccount.Email,
+                "QUIZLEARN - Classroom Invitation",
+                htmlContent
+            );
         }
 
     }

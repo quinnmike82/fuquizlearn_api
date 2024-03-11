@@ -145,5 +145,13 @@ namespace fuquizlearn_api.Controllers
            var result = await _classroomService.GetAllClassroomsByAccountId(options, Account);
             return Ok(result);
         }
+
+        [HttpPost("sent-invitation-email/{classroomId}")]
+        [Authorize]
+        public async Task<IActionResult> SentInvitationEmail(int classroomId, [FromBody] BatchMemberRequest batchMemberRequest)
+        {
+            await _classroomService.SentInvitationEmail(classroomId, batchMemberRequest, Account);
+            return Ok();
+        }
     }
 }
