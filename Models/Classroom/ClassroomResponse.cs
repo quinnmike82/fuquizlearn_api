@@ -12,6 +12,7 @@ namespace fuquizlearn_api.Models.Classroom
         public int[] BankIds { get; set; }
         public int[]? AccountIds { get; set; }
         public DateTime Created { get; set; }
+        public int StudentNumber { get; set; }
         public bool isStudentAllowInvite { get; set; }
     }
 }
