@@ -120,7 +120,7 @@ namespace fuquizlearn_api.Services
             }
             else if (entityType == typeof(Post))
             {
-                var posts = await _context.Posts.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var posts = await _context.Posts.Include(c => c.Author).Include(c => c.Classroom).Include(i => i.Comments).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var postResponses = _mapper.Map<List<PostResponse>>(posts);
                 objects.Add("posts", postResponses.Cast<object>().ToList());
             }

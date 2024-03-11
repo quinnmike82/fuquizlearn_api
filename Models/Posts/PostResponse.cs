@@ -1,5 +1,6 @@
 ﻿using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Classroom;
 
 namespace fuquizlearn_api.Models.Posts
 {
@@ -7,6 +8,7 @@ namespace fuquizlearn_api.Models.Posts
     {
         public int Id { get; set; }
         public string Title { get; set; }
+        public ClassroomResponse Classroom { get; set; }
         public string Content { get; set; }
         public AccountResponse? Author { get; set; }
         public List<CommentResponse>? Comments { get; set; }

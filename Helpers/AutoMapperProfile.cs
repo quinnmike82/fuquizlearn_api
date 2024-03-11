@@ -82,7 +82,7 @@ namespace fuquizlearn_api.Helpers
                opt => opt.MapFrom(src => src.Quizes.Count()));
             CreateMap<ClassroomCreate, Classroom>();
             CreateMap<Classroom, ClassroomResponse>()
-            .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
             {
                 var mapper = context.Mapper;
                 var accountResponse = mapper.Map<AccountResponse>(src.Account);
@@ -99,6 +99,12 @@ namespace fuquizlearn_api.Helpers
             {
                 var mapper = context.Mapper;
                 var commentResponse = mapper.Map<AccountResponse>(src.Author);
+                return commentResponse;
+            }))
+            .ForMember(dest => dest.Classroom, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<ClassroomResponse>(src.Classroom);
                 return commentResponse;
             }))
             ;
