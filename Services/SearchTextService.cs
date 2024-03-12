@@ -108,19 +108,19 @@ namespace fuquizlearn_api.Services
 
             if (entityType == typeof(Quiz))
             {
-                var quizes = await _context.Quizes.Where(q => ids.Contains(q.Id)).ToListAsync();
-                var quizResponses = _mapper.Map<List<QuizResponse>>(quizes);
+                var quizes = await _context.Quizes.Include(c => c.QuizBank).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizResponses = _mapper.Map<List<QuizSearchResponse>>(quizes);
                 objects.Add("quizzes", quizResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(QuizBank))
             {
-                var quizBanks = await _context.QuizBanks.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var quizBankResponses = _mapper.Map<List<QuizBankResponse>>(quizBanks);
                 objects.Add("quizBanks", quizBankResponses.Cast<object>().ToList());
             }
             else if (entityType == typeof(Post))
             {
-                var posts = await _context.Posts.Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var posts = await _context.Posts.Include(c => c.Author).Include(c => c.Classroom).Include(i => i.Comments).Where(q => ids.Contains(q.Id)).ToListAsync();
                 var postResponses = _mapper.Map<List<PostResponse>>(posts);
                 objects.Add("posts", postResponses.Cast<object>().ToList());
             }

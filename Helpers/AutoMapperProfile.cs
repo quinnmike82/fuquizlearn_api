@@ -61,6 +61,13 @@ namespace fuquizlearn_api.Helpers
                     }
                 ));
             CreateMap<Quiz, QuizResponse>();
+            CreateMap<Quiz, QuizSearchResponse>()
+                .ForMember(dest => dest.QuizBank, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var accountResponse = mapper.Map<QuizBankResponse>(src.QuizBank);
+                return accountResponse;
+            }));
 
             CreateMap<QuizBankCreate, QuizBank>().ForMember(qb => qb.Visibility, op => op.MapFrom(src => src.Visibility ?? Visibility.Public));
             CreateMap<QuizBankUpdate, QuizBank>().ForAllMembers(x => x.Condition(
@@ -82,7 +89,7 @@ namespace fuquizlearn_api.Helpers
                opt => opt.MapFrom(src => src.Quizes.Count()));
             CreateMap<ClassroomCreate, Classroom>();
             CreateMap<Classroom, ClassroomResponse>()
-            .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
             {
                 var mapper = context.Mapper;
                 var accountResponse = mapper.Map<AccountResponse>(src.Account);
@@ -99,6 +106,12 @@ namespace fuquizlearn_api.Helpers
             {
                 var mapper = context.Mapper;
                 var commentResponse = mapper.Map<AccountResponse>(src.Author);
+                return commentResponse;
+            }))
+            .ForMember(dest => dest.Classroom, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<ClassroomResponse>(src.Classroom);
                 return commentResponse;
             }))
             ;

@@ -56,7 +56,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<List<PostResponse>> GetAllPosts(int classroomId)
         {
-            var posts = await _context.Posts.Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToListAsync();
+            var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToListAsync();
             var postResponse = _mapper.Map<List<PostResponse>>(posts);
             for (int i = 0; i < postResponse.Count(); i++)
             {
@@ -90,7 +90,7 @@ namespace fuquizlearn_api.Services
 
         private async Task<Post> GetPost(int postId)
         {
-            var post = await _context.Posts.Include(i => i.Comments).FirstOrDefaultAsync(p => p.Id == postId);
+            var post = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).FirstOrDefaultAsync(p => p.Id == postId);
             if (post == null)
             {
                 throw new KeyNotFoundException("Could not find the Post");
