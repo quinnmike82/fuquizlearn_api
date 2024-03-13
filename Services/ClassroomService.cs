@@ -271,7 +271,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options)
         {
             var pagedQuizes = await _context.Classrooms.Include(c => c.Account).ToPagedAsync(options,
-               q => q.Classname.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+               q => q.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<ClassroomResponse>
             {
                 Data = _mapper.Map<IEnumerable<ClassroomResponse>>(pagedQuizes.Data),
@@ -288,7 +288,7 @@ namespace fuquizlearn_api.Services
 
             var allClassrooms = await classroomsOwned.Concat(classroomsJoined)
                 .ToPagedAsync(options,
-                x => x.Classname.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+                x => x.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
             return new PagedResponse<ClassroomResponse>
             {
