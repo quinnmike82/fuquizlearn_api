@@ -66,7 +66,7 @@ namespace fuquizlearn_api.Services
             }
 
             var pagedQuizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToPagedAsync(options,
-               q => q.Question.Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase));
+               q => q.Question.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<QuizResponse>
             {
                 Data = _mapper.Map<IEnumerable<QuizResponse>>(pagedQuizes.Data),
