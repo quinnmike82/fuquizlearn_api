@@ -21,112 +21,43 @@ namespace fuquizlearn_api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateNotification(NotificationCreate noti)
         {
-            try
-            {
                 var newNotification = await _notificationService.CreateNotification(noti);
                 return Ok(newNotification);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteNotification(int id, [FromQuery] int accountId)
+        public async Task<IActionResult> DeleteNotification(int id)
         {
-            try
-            {
-                var account = new Account { Id = accountId }; // Assuming you get the account id from somewhere
-                await _notificationService.DeleteNotification(id, account);
+                await _notificationService.DeleteNotification(id, Account);
                 return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
 
-        [HttpGet("{accountId}")]
-        public async Task<IActionResult> GetCurrentNotifications(int accountId)
+        [HttpGet("GetCurrentNotifications")]
+        public async Task<IActionResult> GetCurrentNotifications()
         {
-            try
-            {
-                var account = new Account { Id = accountId }; // Assuming you get the account id from somewhere
-                var notifications = await _notificationService.GetCurrent(account);
+                var notifications = await _notificationService.GetCurrent(Account);
                 return Ok(notifications);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
 
         [HttpGet("account/{accountId}")]
         public async Task<IActionResult> GetNotificationsByAccount(int accountId)
         {
-            try
-            {
                 var notifications = await _notificationService.GetNotificationByAccount(accountId);
                 return Ok(notifications);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
 
         [HttpPut]
         public async Task<IActionResult> UpdateNotification(NotificationUpdate noti)
         {
-            try
-            {
                 var updatedNotification = await _notificationService.UpdateNotification(noti);
                 return Ok(updatedNotification);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
 
-        [HttpPut("{id}/read")]
-        public async Task<IActionResult> MarkNotificationAsRead(int id, [FromQuery] int accountId)
+        [HttpPut("read/{id}")]
+        public async Task<IActionResult> MarkNotificationAsRead(int id)
         {
-            try
-            {
-                var account = new Account { Id = accountId }; // Assuming you get the account id from somewhere
-                var readNotification = await _notificationService.ReadNotification(id, account);
+                var readNotification = await _notificationService.ReadNotification(id, Account);
                 return Ok(readNotification);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
         }
     }
 }

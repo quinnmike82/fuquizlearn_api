@@ -6,7 +6,7 @@
         public string Title { get; set; }
         public string Type { get; set; }
         public Account? Account { get; set; }
-        public DateTime Created { get; set; }
+        public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime? Read { get; set; }
         public DateTime? Deleted  { get; set; }
     }
