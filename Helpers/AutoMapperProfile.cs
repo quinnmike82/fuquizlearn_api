@@ -3,6 +3,7 @@ using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
+using fuquizlearn_api.Models.Notification;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
@@ -129,6 +130,9 @@ namespace fuquizlearn_api.Helpers
             .ForMember(x => x.PostId, op => op.MapFrom(src => src.Post.Id));
 
             CreateMap<LearnedProgress, ProgressResponse>();
+            CreateMap<Notification, NotificationResponse>();
+            CreateMap<NotificationCreate, Notification>();
+            CreateMap<NotificationUpdate, Notification>();
         }
     }
 }

@@ -21,7 +21,9 @@ public class DataContext : DbContext
     public DbSet<Post> Posts { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<LearnedProgress> LearnedProgress { get; set; }
-
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<Plan> Plans { get; set; }
+    public DbSet<PlanAccount> PlanAccounts { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
