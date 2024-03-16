@@ -383,8 +383,13 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find Classroom");
             }
+            var isAllow = classroom.Account.Id == account.Id;
+            if (!isAllow && classroom.isStudentAllowInvite)
+            {
+                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
+            }
 
-            if (classroom.Account.Id != account.Id && !classroom.AccountIds.Contains(account.Id))
+            if (!isAllow)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
@@ -421,7 +426,7 @@ namespace fuquizlearn_api.Services
                 _context.Classrooms.Update(classroom);
                 await _context.SaveChangesAsync();
 
-                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classroom?joinCode={code}"), classroom.Classname);
+                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classrooms?code={code}"), classroom.Classname);
             }
         }
 
