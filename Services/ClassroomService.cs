@@ -34,6 +34,7 @@ namespace fuquizlearn_api.Services
         Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds);
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
+        Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account);
     }
     public class ClassroomService : IClassroomService
     {
@@ -238,13 +239,14 @@ namespace fuquizlearn_api.Services
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
-            if (classroom.isStudentAllowInvite)
+
+            var isAllow = classroom.Account.Id == account.Id;
+            if (!isAllow && classroom.isStudentAllowInvite)
             {
-                var isMember = classroom?.AccountIds?.Contains(account.Id);
-                if(isMember ==  false) throw new UnauthorizedAccessException("Unauthorized");
+                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
             }
-            else if(classroom.Account.Id != account.Id)
-                throw new UnauthorizedAccessException("Unauthorized");
+
+            if(!isAllow) throw new UnauthorizedAccessException("Unauthorized");
             string code = generateVerificationToken();
             var classroomCode = new ClassroomCode
             {
@@ -315,6 +317,21 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<ClassroomResponse>(classroom);
         }
 
+        public async Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account)
+        {
+            var classroomsJoined = await _context.ClassroomsMembers
+                                                     .Where(i => i.AccountId == account.Id)
+                                                     .Select(cm => cm.Classroom)
+                                                     .ToPagedAsync(options,
+                x => x.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<ClassroomResponse>
+            {
+                Data = _mapper.Map<IEnumerable<ClassroomResponse>>(classroomsJoined.Data),
+                Metadata = classroomsJoined.Metadata
+            };
+        }
+
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
         {
             var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode));
@@ -382,8 +399,13 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find Classroom");
             }
+            var isAllow = classroom.Account.Id == account.Id;
+            if (!isAllow && classroom.isStudentAllowInvite)
+            {
+                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
+            }
 
-            if (classroom.Account.Id != account.Id && !classroom.AccountIds.Contains(account.Id))
+            if (!isAllow)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
@@ -420,7 +442,7 @@ namespace fuquizlearn_api.Services
                 _context.Classrooms.Update(classroom);
                 await _context.SaveChangesAsync();
 
-                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classroom?joinCode={code}"), classroom.Classname);
+                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classrooms?code={code}"), classroom.Classname);
             }
         }
 
