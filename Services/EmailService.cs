@@ -16,6 +16,7 @@ public class EmailService : IEmailService
     public EmailService(ISendGridClient sendGridClient)
     {
         _sendGridClient = sendGridClient ?? throw new ArgumentNullException(nameof(sendGridClient));
+        _logger = new Logger<IEmailService>(new LoggerFactory());
     }
 
     public async Task SendAsync(string to, string subject, string html, string from = null)
