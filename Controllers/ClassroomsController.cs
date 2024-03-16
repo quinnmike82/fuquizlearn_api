@@ -146,6 +146,14 @@ namespace fuquizlearn_api.Controllers
             return Ok(result);
         }
 
+        [HttpGet("getCurrentJoined")]
+        [Authorize]
+        public async Task<ActionResult<List<ClassroomResponse>>> GetCurrentJoinedClassroom([FromQuery] PagedRequest options)
+        {
+            var result = await _classroomService.GetCurrentJoinedClassroom(options, Account);
+            return Ok(result);
+        }
+
         [HttpPost("sent-invitation-email/{classroomId}")]
         [Authorize]
         public async Task<IActionResult> SentInvitationEmail(int classroomId, [FromBody] BatchMemberRequest batchMemberRequest)

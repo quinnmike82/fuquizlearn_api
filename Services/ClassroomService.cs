@@ -34,6 +34,7 @@ namespace fuquizlearn_api.Services
         Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds);
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
+        Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account);
     }
     public class ClassroomService : IClassroomService
     {
@@ -314,6 +315,21 @@ namespace fuquizlearn_api.Services
         {
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
             return _mapper.Map<ClassroomResponse>(classroom);
+        }
+
+        public async Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account)
+        {
+            var classroomsJoined = await _context.ClassroomsMembers
+                                                     .Where(i => i.AccountId == account.Id)
+                                                     .Select(cm => cm.Classroom)
+                                                     .ToPagedAsync(options,
+                x => x.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<ClassroomResponse>
+            {
+                Data = _mapper.Map<IEnumerable<ClassroomResponse>>(classroomsJoined.Data),
+                Metadata = classroomsJoined.Metadata
+            };
         }
 
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
