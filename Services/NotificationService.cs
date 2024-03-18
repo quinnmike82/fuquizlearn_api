@@ -1,9 +1,15 @@
 ﻿using AutoMapper;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Notification;
+using fuquizlearn_api.Models.Posts;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Principal;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services
 {
@@ -12,8 +18,8 @@ namespace fuquizlearn_api.Services
         Task<NotificationResponse> CreateNotification(NotificationCreate noti);
         Task<NotificationResponse> UpdateNotification(NotificationUpdate noti);
         Task DeleteNotification(int id, Account account);
-        Task<List<NotificationResponse>> GetCurrent(Account account);
-        Task<List<NotificationResponse>> GetNotificationByAccount(int Id);
+        Task<PagedResponse<NotificationResponse>> GetCurrent(Account account, PagedRequest options);
+        Task<PagedResponse<NotificationResponse>> GetNotificationByAccount(int Id, PagedRequest options);
         Task<NotificationResponse> ReadNotification(int id, Account account);
     }
     public class NotificationService : INotificationService
@@ -55,16 +61,28 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<NotificationResponse>> GetCurrent(Account account)
+        public async Task<PagedResponse<NotificationResponse>> GetCurrent(Account account, PagedRequest options)
         {
-            var noti = await _context.Notifications.Include(i => i.Account).Where(i => i.Account.Id == account.Id).ToListAsync();
-            return _mapper.Map<List<NotificationResponse>>(noti);
+            var noti = await _context.Notifications.Include(i => i.Account).Where(i => i.Account.Id == account.Id).ToPagedAsync(options,
+           x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<NotificationResponse>
+            {
+                Data = _mapper.Map<IEnumerable<NotificationResponse>>(noti.Data),
+                Metadata = noti.Metadata
+            };
         }
 
-        public async Task<List<NotificationResponse>> GetNotificationByAccount(int Id)
+        public async Task<PagedResponse<NotificationResponse>> GetNotificationByAccount(int Id, PagedRequest options)
         {
-            var noti = await _context.Notifications.Include(i => i.Account).Where(i => i.Account.Id == Id).ToListAsync();
-            return _mapper.Map<List<NotificationResponse>>(noti);
+            var noti = await _context.Notifications.Include(i => i.Account).Where(i => i.Account.Id == Id).ToPagedAsync(options,
+           x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<NotificationResponse>
+            {
+                Data = _mapper.Map<IEnumerable<NotificationResponse>>(noti.Data),
+                Metadata = noti.Metadata
+            };
         }
 
         public async Task<NotificationResponse> ReadNotification(int id, Account account)

@@ -1,10 +1,17 @@
 ﻿using AutoMapper;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Plan;
+using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services
 {
@@ -14,7 +21,7 @@ namespace fuquizlearn_api.Services
         Task<PlanResponse> UpdatePlan(PlanUpdate planUpdate, Account account);
         Task<PlanResponse> UnReleasePlan(int id, Account account);
         Task RemovePlan(int id, Account account);
-        Task<List<PlanResponse>> GetAllPlan();
+        Task<PagedResponse<PlanResponse>> GetAllPlan(PagedRequest options);
         Task<PlanAccount> RegisterPlan(int id,Account account);
     }
     public class PlanService : IPlanService
@@ -36,10 +43,15 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<PlanResponse>(plan);
         }
 
-        public async Task<List<PlanResponse>> GetAllPlan()
+        public async Task<PagedResponse<PlanResponse>> GetAllPlan(PagedRequest options)
         {
-            var plan = await _context.Plans.ToListAsync();
-            return _mapper.Map<List<PlanResponse>>(plan);
+            var plan = await _context.Plans.ToPagedAsync(options,
+            x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()) || x.Description.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            return new PagedResponse<PlanResponse>
+            {
+                Data = _mapper.Map<IEnumerable<PlanResponse>>(plan.Data),
+                Metadata = plan.Metadata
+            };
         }
 
         public async Task<PlanAccount> RegisterPlan(int id, Account account)
