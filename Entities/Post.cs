@@ -10,6 +10,8 @@
         public List<Comment>? Comments { get; set; }
         public string? GameLink { get; set; }
         public string? BankLink { get; set; }
+        public int[]? ViewIds { get; set; } = new int[] {};
+        public QuizBank? QuizBank { get; set; }
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime? Updated { get; set; }
     }
