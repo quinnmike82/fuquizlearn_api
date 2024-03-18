@@ -1,6 +1,7 @@
 ﻿using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Posts;
+using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,9 +41,9 @@ namespace fuquizlearn_api.Controllers
         }
 
         [HttpGet("classroom/{classroomId}")]
-        public async Task<IActionResult> GetAllPosts(int classroomId)
+        public async Task<IActionResult> GetAllPosts(int classroomId, [FromQuery] PagedRequest options)
         {
-            var posts = await _postService.GetAllPosts(classroomId);
+            var posts = await _postService.GetAllPosts(classroomId, options);
             return Ok(posts);
         }
 

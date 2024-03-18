@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
+using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +17,7 @@ namespace fuquizlearn_api.Services
     {
         Task<PostResponse> CreatePost(PostCreate post, Account account);
         Task<PostResponse> GetPostById(int id);
-        Task<List<PostResponse>> GetAllPosts(int classroomId);
+        Task<PagedResponse<PostResponse>> GetAllPosts(int classroomId, PagedRequest options);
         Task<PostResponse> UpdatePost(int PostId,PostUpdate post, Account currentUser);
         Task DeletePost(int id);
         Task<CommentResponse> CreateComment(int postId, CommentCreate comment, Account account);
@@ -54,15 +57,23 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<PostResponse>(post);
         }
 
-        public async Task<List<PostResponse>> GetAllPosts(int classroomId)
+        public async Task<PagedResponse<PostResponse>> GetAllPosts(int classroomId, PagedRequest options)
         {
-            var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToListAsync();
-            var postResponse = _mapper.Map<List<PostResponse>>(posts);
+            // var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToListAsync();
+            var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Include(i=>i.Comments)
+                .ToPagedAsync(options, post => post.Classroom.Id == classroomId);
+            var postResponse = _mapper.Map<List<PostResponse>>(posts.Data);
+            var list = posts.Data.ToList();
             for (int i = 0; i < postResponse.Count(); i++)
             {
-                postResponse[i].Comments = _mapper.Map<List<CommentResponse>>(posts[i].Comments);
+                postResponse[i].Comments = _mapper.Map<List<CommentResponse>>(list[i].Comments);
             }
-            return postResponse;
+
+            return  new PagedResponse<PostResponse>
+            {
+                Data = postResponse,
+                Metadata = posts.Metadata
+            }; 
         }
 
         public async Task<PostResponse> UpdatePost(int postId,PostUpdate post, Account currentUser)
