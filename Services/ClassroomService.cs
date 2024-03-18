@@ -239,14 +239,13 @@ namespace fuquizlearn_api.Services
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
-
-            var isAllow = classroom.Account.Id == account.Id;
-            if (!isAllow && classroom.isStudentAllowInvite)
+            if (classroom.isStudentAllowInvite)
             {
-                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
+                var isMember = classroom?.AccountIds?.Contains(account.Id);
+                if(isMember ==  false) throw new UnauthorizedAccessException("Unauthorized");
             }
-
-            if(!isAllow) throw new UnauthorizedAccessException("Unauthorized");
+            else if(classroom.Account.Id != account.Id)
+                throw new UnauthorizedAccessException("Unauthorized");
             string code = generateVerificationToken();
             var classroomCode = new ClassroomCode
             {
@@ -442,7 +441,7 @@ namespace fuquizlearn_api.Services
                 _context.Classrooms.Update(classroom);
                 await _context.SaveChangesAsync();
 
-                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classrooms?code={code}"), classroom.Classname);
+                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classroom?joinCode={code}"), classroom.Classname);
             }
         }
 
