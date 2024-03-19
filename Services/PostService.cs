@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
