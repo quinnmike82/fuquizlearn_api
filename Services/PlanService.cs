@@ -100,7 +100,7 @@ namespace fuquizlearn_api.Services
                 throw new UnauthorizedAccessException("Not Admin");
             var plan = await _context.Plans.FirstOrDefaultAsync(plan => plan.Id == planUpdate.Id);
             if (plan == null) throw new KeyNotFoundException("Not Found Plan");
-            plan = _mapper.Map<Plan>(planUpdate);
+            _mapper.Map(planUpdate,plan);
             _context.Plans.Update(plan);
             await _context.SaveChangesAsync();
             return _mapper.Map<PlanResponse>(plan);

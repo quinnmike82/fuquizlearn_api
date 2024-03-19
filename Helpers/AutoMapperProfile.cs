@@ -102,7 +102,16 @@ namespace fuquizlearn_api.Helpers
                 return src.AccountIds?.Length;
             }))
             ;
-            CreateMap<ClassroomUpdate, Classroom>();
+            CreateMap<ClassroomUpdate, Classroom>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<Post, PostResponse>()
             .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
             {
@@ -129,7 +138,16 @@ namespace fuquizlearn_api.Helpers
             }))
             ;
             CreateMap<PostCreate, Post>();
-            CreateMap<PostUpdate, Post>();
+            CreateMap<PostUpdate, Post>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<ClassroomCode, ClassroomCodeResponse>();
             CreateMap<CommentCreate, Comment>();
             CreateMap<Comment, CommentResponse>()
@@ -144,10 +162,28 @@ namespace fuquizlearn_api.Helpers
             CreateMap<LearnedProgress, ProgressResponse>();
             CreateMap<Notification, NotificationResponse>();
             CreateMap<NotificationCreate, Notification>();
-            CreateMap<NotificationUpdate, Notification>();
+            CreateMap<NotificationUpdate, Notification>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<Plan, PlanResponse>();
             CreateMap<PlanCreate, Plan>();
-            CreateMap<PlanUpdate, Plan>();
+            CreateMap<PlanUpdate, Plan>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
         }
     }
 }
