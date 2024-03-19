@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
@@ -65,11 +65,11 @@ namespace fuquizlearn_api.Helpers
             CreateMap<Quiz, QuizResponse>();
             CreateMap<Quiz, QuizSearchResponse>()
                 .ForMember(dest => dest.QuizBank, opt => opt.MapFrom((src, dest, destMember, context) =>
-            {
-                var mapper = context.Mapper;
-                var accountResponse = mapper.Map<QuizBankResponse>(src.QuizBank);
-                return accountResponse;
-            }));
+                {
+                    var mapper = context.Mapper;
+                    var accountResponse = mapper.Map<QuizBankResponse>(src.QuizBank);
+                    return accountResponse;
+                }));
 
             CreateMap<QuizBankCreate, QuizBank>().ForMember(qb => qb.Visibility, op => op.MapFrom(src => src.Visibility ?? Visibility.Public));
             CreateMap<QuizBankUpdate, QuizBank>().ForAllMembers(x => x.Condition(
@@ -102,7 +102,16 @@ namespace fuquizlearn_api.Helpers
                 return src.AccountIds?.Length;
             }))
             ;
-            CreateMap<ClassroomUpdate, Classroom>();
+            CreateMap<ClassroomUpdate, Classroom>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<Post, PostResponse>()
             .ForMember(dest => dest.Author, opt => opt.MapFrom((src, dest, destMember, context) =>
             {
@@ -129,7 +138,16 @@ namespace fuquizlearn_api.Helpers
             }))
             ;
             CreateMap<PostCreate, Post>();
-            CreateMap<PostUpdate, Post>();
+            CreateMap<PostUpdate, Post>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<ClassroomCode, ClassroomCodeResponse>();
             CreateMap<CommentCreate, Comment>();
             CreateMap<Comment, CommentResponse>()
@@ -144,10 +162,28 @@ namespace fuquizlearn_api.Helpers
             CreateMap<LearnedProgress, ProgressResponse>();
             CreateMap<Notification, NotificationResponse>();
             CreateMap<NotificationCreate, Notification>();
-            CreateMap<NotificationUpdate, Notification>();
+            CreateMap<NotificationUpdate, Notification>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
             CreateMap<Plan, PlanResponse>();
             CreateMap<PlanCreate, Plan>();
-            CreateMap<PlanUpdate, Plan>();
+            CreateMap<PlanUpdate, Plan>()
+                .ForAllMembers(x => x.Condition(
+                    (src, dest, prop) =>
+                    {
+                        if (prop == null) return false;
+                        if (prop.GetType() == typeof(string) && string.IsNullOrEmpty((string)prop)) return false;
+
+                        return true;
+                    }
+                ));
         }
     }
 }

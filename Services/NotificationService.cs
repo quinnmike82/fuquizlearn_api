@@ -109,7 +109,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Notification not found");
             }
-            noti = _mapper.Map<Notification>(notiUpdate);
+            _mapper.Map(notiUpdate,noti);
             noti.Deleted = DateTime.UtcNow;
             _context.Notifications.Update(noti);
             await _context.SaveChangesAsync();

@@ -271,7 +271,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options)
         {
-            var pagedQuizes = await _context.Classrooms.Include(c => c.Account).ToPagedAsync(options,
+            var pagedQuizes = await _context.Classrooms.Include(c => c.Account).Where(i => i.DeletedAt == null).ToPagedAsync(options,
                q => q.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<ClassroomResponse>
             {
@@ -282,9 +282,10 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<ClassroomResponse>> GetAllClassroomsByAccountId(PagedRequest options, Account account)
         {
-            var classroomsOwned = _context.Classrooms.Where(i => i.Account.Id == account.Id);
+            var classroomsOwned = _context.Classrooms.Where(i => i.Account.Id == account.Id && i.DeletedAt == null);
             var classroomsJoined = _context.ClassroomsMembers
-                                                     .Where(i => i.AccountId == account.Id)
+                                                     .Include(i => i.Classroom)
+                                                     .Where(i => i.AccountId == account.Id && i.Classroom.DeletedAt == null)
                                                      .Select(cm => cm.Classroom);
 
             var allClassrooms = await classroomsOwned.Concat(classroomsJoined)
@@ -300,9 +301,10 @@ namespace fuquizlearn_api.Services
 
         public async Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id)
         {
-            var classroomsOwned = await _context.Classrooms.Where(i => i.Account.Id == id).ToListAsync();
+            var classroomsOwned = await _context.Classrooms.Where(i => i.Account.Id == id && i.DeletedAt == null).ToListAsync();
             var classroomsJoined = await _context.ClassroomsMembers
-                                                     .Where(i => i.AccountId == id)
+                                                     .Include(i => i.Classroom)
+                                                     .Where(i => i.AccountId == id && i.Classroom.DeletedAt == null)
                                                      .Select(cm => cm.Classroom)
                                                      .ToListAsync();
 
@@ -318,9 +320,10 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account)
         {
-            var classroomsJoined = await _context.ClassroomsMembers
+            var classroomsJoined = await _context.ClassroomsMembers.Include(i => i.Classroom)
                                                      .Where(i => i.AccountId == account.Id)
                                                      .Select(cm => cm.Classroom)
+                                                     .Where(c => c.DeletedAt == null)
                                                      .ToPagedAsync(options,
                 x => x.Classname.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
