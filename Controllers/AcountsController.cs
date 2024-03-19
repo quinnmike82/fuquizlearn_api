@@ -1,9 +1,11 @@
 ﻿using fuquizlearn_api.Entities;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace fuquizlearn_api.Controllers;
 
@@ -20,9 +22,9 @@ public class AccountsController : BaseController
 
     [AllowAnonymous]
     [HttpGet]
-    public ActionResult<IEnumerable<AccountResponse>> GetAll()
+    public async Task<ActionResult<IEnumerable<AccountResponse>>> GetAllAsync([FromQuery] PagedRequest options)
     {
-        var accounts = _accountService.GetAll();
+        var accounts = await _accountService.GetAll(options);
         return Ok(accounts);
     }
 

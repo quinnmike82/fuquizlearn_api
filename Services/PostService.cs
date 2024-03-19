@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
@@ -10,6 +11,8 @@ using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Web;
 
 namespace fuquizlearn_api.Services
 {
@@ -22,8 +25,10 @@ namespace fuquizlearn_api.Services
         Task DeletePost(int id);
         Task<CommentResponse> CreateComment(int postId, CommentCreate comment, Account account);
         Task<CommentResponse> GetCommentById(int id);
-        Task<List<CommentResponse>> GetAllComments(int postId);
+        Task<PagedResponse<CommentResponse>> GetAllComments(int postId, PagedRequest option);
         Task DeleteComment(int id);
+        Task<bool> AddView(int postId, Account account);
+        Task<PagedResponse<AccountResponse>> GetAccountView(int postId, PagedRequest options);
     }
     public class PostService : IPostService
     {
@@ -59,21 +64,24 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<PostResponse>> GetAllPosts(int classroomId, PagedRequest options)
         {
-            // var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToListAsync();
-            var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Include(i=>i.Comments)
-                .ToPagedAsync(options, post => post.Classroom.Id == classroomId);
-            var postResponse = _mapper.Map<List<PostResponse>>(posts.Data);
-            var list = posts.Data.ToList();
-            for (int i = 0; i < postResponse.Count(); i++)
-            {
-                postResponse[i].Comments = _mapper.Map<List<CommentResponse>>(list[i].Comments);
-            }
+            var posts = await _context.Posts.Include(c => c.Classroom).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToPagedAsync(options,
+            x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
-            return  new PagedResponse<PostResponse>
+            var pages = new PagedResponse<PostResponse>
             {
-                Data = postResponse,
+                Data = _mapper.Map<IEnumerable<PostResponse>>(posts.Data),
                 Metadata = posts.Metadata
-            }; 
+            };
+            var bank = new QuizBank();
+            int id;
+            foreach (var page in pages.Data)
+            {
+                if (int.TryParse(page.BankLink, out id))
+                { bank = await _context.QuizBanks.FindAsync(id);
+                if (bank != null)
+                    page.QuizBank = _mapper.Map<QuizBankResponse>(bank); }
+            }
+            return pages;
         }
 
         public async Task<PostResponse> UpdatePost(int postId,PostUpdate post, Account currentUser)
@@ -106,6 +114,9 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find the Post");
             }
+            int id;
+            if(int.TryParse(post.BankLink, out id))
+                post.QuizBank = await _context.QuizBanks.FindAsync(id);
             return post;
         }
 
@@ -140,10 +151,16 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<CommentResponse>(comment);
         }
 
-        public async Task<List<CommentResponse>> GetAllComments(int postId)
+        public async Task<PagedResponse<CommentResponse>> GetAllComments(int postId, PagedRequest options)
         {
-            var comments = await _context.Comments.Where(c => c.Post.Id == postId).ToListAsync();
-            return _mapper.Map<List<CommentResponse>>(comments);
+            var comments = await _context.Comments.Include(c => c.Author).Where(c => c.Post.Id == postId).ToPagedAsync(options,
+            x => x.Content.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            return new PagedResponse<CommentResponse>
+            {
+                Data = _mapper.Map<IEnumerable<CommentResponse>>(comments.Data),
+                Metadata = comments.Metadata
+            };
+
         }
 
         public async Task DeleteComment(int id)
@@ -156,5 +173,46 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> AddView(int postId, Account account)
+        {
+            var post = await GetPost(postId);
+            if (post == null) throw new KeyNotFoundException("Post not found");
+            if(post.ViewIds == null)
+            {
+                post.ViewIds = new int[] {account.Id};
+                _context.Posts.Update(post);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            if(Array.IndexOf(post.ViewIds, account.Id) == -1)
+            {
+                post.ViewIds.Append(account.Id);
+                _context.Posts.Update(post);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public async Task<PagedResponse<AccountResponse>> GetAccountView(int postId, PagedRequest options)
+        {
+            var post = await GetPost(postId);
+            if (post == null) throw new KeyNotFoundException("Post not found");
+            if (post.ViewIds == null)
+            {
+                post.ViewIds = new int[] { };
+            }
+            int[] ids = post.ViewIds;
+            var accounts = await _context.Accounts.Where(c => ids.Contains(c.Id)).ToPagedAsync(options,
+            x => x.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            return new PagedResponse<AccountResponse>
+            {
+                Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+                Metadata = accounts.Metadata
+            };
+        }
     }
 }

@@ -3,11 +3,17 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 using AutoMapper;
 using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using BC = BCrypt.Net.BCrypt;
@@ -27,7 +33,7 @@ public interface IAccountService
     string ForgotPassword(ForgotPasswordRequest model, string origin);
     void ResetPassword(ResetPasswordRequest model);
     Account GetByEmail(string email);
-    IEnumerable<AccountResponse> GetAll();
+    Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options);
     AccountResponse GetById(int id);
     AccountResponse Create(CreateRequest model);
     AccountResponse Update(int id, UpdateRequest model);
@@ -286,10 +292,15 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public IEnumerable<AccountResponse> GetAll()
+    public async Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options)
     {
-        var accounts = _context.Accounts;
-        return _mapper.Map<IList<AccountResponse>>(accounts);
+        var accounts = await _context.Accounts.ToPagedAsync(options,
+            x => x.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        return new PagedResponse<AccountResponse>
+        {
+            Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+            Metadata = accounts.Metadata
+        };
     }
 
     public AccountResponse GetById(int id)

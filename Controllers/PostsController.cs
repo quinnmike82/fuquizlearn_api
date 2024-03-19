@@ -29,15 +29,8 @@ namespace fuquizlearn_api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPostById(int id)
         {
-            try
-            {
                 var post = await _postService.GetPostById(id);
                 return Ok(post);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
         }
 
         [HttpGet("classroom/{classroomId}")]
@@ -50,33 +43,15 @@ namespace fuquizlearn_api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePost(int id, [FromBody] PostUpdate postUpdate)
         {
-            try
-            {
                 var updatedPost = await _postService.UpdatePost(id, postUpdate, Account);
                 return Ok(updatedPost);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePost(int id)
         {
-            try
-            {
                 await _postService.DeletePost(id);
                 return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
 
         [HttpPost("{postId}/comments")]
@@ -89,36 +64,35 @@ namespace fuquizlearn_api.Controllers
         [HttpGet("comments/{id}")]
         public async Task<IActionResult> GetCommentById(int id)
         {
-            try
-            {
                 var comment = await _postService.GetCommentById(id);
                 return Ok(comment);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
         }
 
         [HttpGet("{postId}/comments")]
-        public async Task<IActionResult> GetAllComments(int postId)
+        public async Task<IActionResult> GetAllComments(int postId, [FromQuery] PagedRequest options)
         {
-            var comments = await _postService.GetAllComments(postId);
+            var comments = await _postService.GetAllComments(postId, options);
             return Ok(comments);
         }
 
         [HttpDelete("comments/{id}")]
         public async Task<IActionResult> DeleteComment(int id)
         {
-            try
-            {
                 await _postService.DeleteComment(id);
                 return NoContent();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
         }
+        [HttpPost("AddView/{id}")]
+        public async Task<IActionResult> AddView(int id)
+        {
+                var comment = await _postService.AddView(id, Account);
+                return Ok(comment);
+        }
+        [HttpGet("{id}/views")]
+        public async Task<IActionResult> GetAccountView(int id, [FromQuery] PagedRequest options)
+        {
+                var comment = await _postService.GetAccountView(id, options);
+                return Ok(comment);
+        }
+
     }
 }

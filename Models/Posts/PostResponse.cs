@@ -1,6 +1,7 @@
 ﻿using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
+using fuquizlearn_api.Models.QuizBank;
 
 namespace fuquizlearn_api.Models.Posts
 {
@@ -14,6 +15,8 @@ namespace fuquizlearn_api.Models.Posts
         public List<CommentResponse>? Comments { get; set; }
         public string? GameLink { get; set; }
         public string? BankLink { get; set; }
+        public QuizBankResponse? QuizBank { get; set; }
+        public int View { get; set; }
         public DateTime Created { get; set; } 
         public DateTime? Updated { get; set; }
     }
