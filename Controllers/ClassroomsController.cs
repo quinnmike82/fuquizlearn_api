@@ -1,8 +1,10 @@
 ﻿using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -35,6 +37,14 @@ namespace fuquizlearn_api.Controllers
                 if (result == null)
                     return NotFound();
                 return Ok(result);
+        }
+
+        [HttpGet("get-all-member/{id}")]
+        [Authorize]
+        public async Task<ActionResult<PagedResponse<AccountResponse>>> GetAllMember(int id,[FromQuery] PagedRequest options)
+        {
+            var result = await _classroomService.GetAllMember(id, Account, options);
+            return Ok(result);
         }
 
         [HttpGet]
