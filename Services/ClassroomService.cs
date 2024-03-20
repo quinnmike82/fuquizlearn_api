@@ -178,7 +178,7 @@ namespace fuquizlearn_api.Services
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
-            if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
+            if (account.Id != classroom.Account.Id && account.Role != Role.Admin && Array.IndexOf(classroom.AccountIds,account.Id) == -1)
                 throw new UnauthorizedAccessException("Unauthorized");
             var newBank = new QuizBank
             {
