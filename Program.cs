@@ -24,7 +24,7 @@ var builder = WebApplication.CreateBuilder(args);
         // serialize enums as strings in api responses (e.g. Role)
         x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
-    services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+    services.AddAutoMapper(cfg => cfg.AllowNullCollections = true, AppDomain.CurrentDomain.GetAssemblies());
     services.AddSwaggerGen(option =>
     {
         option.SwaggerDoc("v1", new OpenApiInfo { Title = "FuQuizLearn API", Version = "v1" });
@@ -87,6 +87,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<ISearchTextService, SearchTextService>();
     services.AddScoped<INotificationService, NotificationService>();
     services.AddScoped<IPlanService, PlanService>();
+    services.AddScoped<IGameService, GameService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
     services.AddHttpClient("GeminiAITextOnly", opt =>
     {
