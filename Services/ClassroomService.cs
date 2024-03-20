@@ -2,6 +2,7 @@
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
@@ -35,6 +36,7 @@ namespace fuquizlearn_api.Services
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
         Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account);
+        Task<PagedResponse<AccountResponse>> GetAllMember(int id, Account account, PagedRequest options);
     }
     public class ClassroomService : IClassroomService
     {
@@ -312,6 +314,32 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<List<ClassroomResponse>>(allClassrooms);
         }
 
+        public async Task<PagedResponse<AccountResponse>> GetAllMember(int id, Account account, PagedRequest options)
+        {
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
+            if (classroom == null)
+            {
+                throw new KeyNotFoundException("Could not find classroom");
+            }
+            var permission = classroom.Account.Id == account.Id 
+                || (classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id))
+                || account.Role == Role.Admin;
+            if (!permission)
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+            var members = await _context.ClassroomsMembers.Include(cm => cm.Account)
+                                                    .Where(cm => cm.ClassroomId == id)
+                                                    .Select(cm => cm.Account)
+                                                    .ToPagedAsync(options,
+                                                    mb => mb.FullName.ToLower().Equals(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            return new PagedResponse<AccountResponse>
+            {
+                Data = _mapper.Map<List<AccountResponse>>(members.Data),
+                Metadata = members.Metadata
+            };
+        }
+
         public async Task<ClassroomResponse> GetClassroomById(int id)
         {
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
@@ -396,7 +424,7 @@ namespace fuquizlearn_api.Services
 
         public async Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account)
         {
-            var classroom = await _context.Classrooms.FirstOrDefaultAsync(c => c.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId);
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
