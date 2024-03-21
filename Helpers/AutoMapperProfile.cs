@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
@@ -184,6 +184,13 @@ namespace fuquizlearn_api.Helpers
                         return true;
                     }
                 ));
+            CreateMap<GameCreate, Game>();
+            CreateMap<Game, GameResponse>();
+            CreateMap<AnswerHistoryRequest, AnswerHistory>();
+            CreateMap<AnswerHistory, AnswerHistoryResponse>();
+            CreateMap<GameRecord, GameRecordResponse>();
+            CreateMap<DateTime, DateTime>().ConvertUsing(i => DateTime.SpecifyKind(i, DateTimeKind.Utc));
+            CreateMap<DateTime?, DateTime?>().ConvertUsing(i => i != null ? DateTime.SpecifyKind(i.Value, DateTimeKind.Utc) : null);
         }
     }
 }
