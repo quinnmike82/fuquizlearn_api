@@ -309,7 +309,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id)
         {
-            var classroomsOwned = await _context.Classrooms.Where(i => i.Account.Id == id && i.DeletedAt == null).ToListAsync();
+            var classroomsOwned = await _context.Classrooms.Include(c => c.Account).Where(i => i.Account.Id == id && i.DeletedAt == null).ToListAsync();
             var classroomsJoined = await _context.ClassroomsMembers
                                                      .Include(i => i.Classroom).ThenInclude(c => c.Account)
                                                      .Where(i => i.AccountId == id && i.Classroom.DeletedAt == null)
@@ -347,7 +347,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<ClassroomResponse> GetClassroomById(int id)
         {
-            var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
             return _mapper.Map<ClassroomResponse>(classroom);
         }
 
