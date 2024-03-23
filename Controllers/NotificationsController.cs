@@ -55,11 +55,18 @@ namespace fuquizlearn_api.Controllers
                 return Ok(updatedNotification);
         }
         [Authorize]
-        [HttpPut("read/{id}")]
+        [HttpPost("read/{id}")]
         public async Task<IActionResult> MarkNotificationAsRead(int id)
         {
                 var readNotification = await _notificationService.ReadNotification(id, Account);
                 return Ok(readNotification);
+        }
+        [Authorize]
+        [HttpGet("unread")]
+        public async Task<IActionResult> GetUnread()
+        {
+            var notifications = await _notificationService.GetUnread(Account);
+            return Ok(notifications);
         }
     }
 }
