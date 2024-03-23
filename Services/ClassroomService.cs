@@ -36,7 +36,7 @@ namespace fuquizlearn_api.Services
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
         Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account);
-        Task<PagedResponse<AccountResponse>> GetAllMember(int id, Account account, PagedRequest options);
+        Task<PagedResponse<ClassroomMemberResponse>> GetAllMember(int id, Account account, PagedRequest options);
     }
     public class ClassroomService : IClassroomService
     {
@@ -320,7 +320,7 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<List<ClassroomResponse>>(allClassrooms);
         }
 
-        public async Task<PagedResponse<AccountResponse>> GetAllMember(int id, Account account, PagedRequest options)
+        public async Task<PagedResponse<ClassroomMemberResponse>> GetAllMember(int id, Account account, PagedRequest options)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
             if (classroom == null)
@@ -334,14 +334,13 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
-            var members = await _context.ClassroomsMembers.Include(cm => cm.Account)
+            var members = await _context.ClassroomsMembers.Include(cm => cm.Account).Include(cm => cm.Classroom)
                                                     .Where(cm => cm.ClassroomId == id)
-                                                    .Select(cm => cm.Account)
                                                     .ToPagedAsync(options,
-                                                    mb => mb.FullName.ToLower().Equals(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-            return new PagedResponse<AccountResponse>
+                                                    mb => mb.Account.FullName.ToLower().Equals(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            return new PagedResponse<ClassroomMemberResponse>
             {
-                Data = _mapper.Map<List<AccountResponse>>(members.Data),
+                Data = _mapper.Map<List<ClassroomMemberResponse>>(members.Data),
                 Metadata = members.Metadata
             };
         }
