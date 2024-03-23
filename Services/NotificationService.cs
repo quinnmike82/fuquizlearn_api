@@ -21,6 +21,7 @@ namespace fuquizlearn_api.Services
         Task<PagedResponse<NotificationResponse>> GetCurrent(Account account, PagedRequest options);
         Task<PagedResponse<NotificationResponse>> GetNotificationByAccount(int Id, PagedRequest options);
         Task<NotificationResponse> ReadNotification(int id, Account account);
+        Task<int> GetUnread(Account account);
     }
     public class NotificationService : INotificationService
     {
@@ -83,6 +84,11 @@ namespace fuquizlearn_api.Services
                 Data = _mapper.Map<IEnumerable<NotificationResponse>>(noti.Data),
                 Metadata = noti.Metadata
             };
+        }
+
+        public async Task<int> GetUnread(Account account)
+        {
+            return _context.Notifications.Include(c => c.Account).Where(a => a.Account.Id == account.Id && a.Read == null).Count();
         }
 
         public async Task<NotificationResponse> ReadNotification(int id, Account account)
