@@ -8,6 +8,7 @@ using fuquizlearn_api.Models.Plan;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
+using SendGrid.Helpers.Mail;
 
 namespace fuquizlearn_api.Helpers
 {
@@ -189,6 +190,7 @@ namespace fuquizlearn_api.Helpers
             CreateMap<AnswerHistoryRequest, AnswerHistory>();
             CreateMap<AnswerHistory, AnswerHistoryResponse>();
             CreateMap<GameRecord, GameRecordResponse>();
+            CreateMap<GameQuiz, GameQuizResponse>().ForMember(x => x.Question, op => op.MapFrom(s => s.Quiz.Question));
             CreateMap<DateTime, DateTime>().ConvertUsing(i => DateTime.SpecifyKind(i, DateTimeKind.Utc));
             CreateMap<DateTime?, DateTime?>().ConvertUsing(i => i != null ? DateTime.SpecifyKind(i.Value, DateTimeKind.Utc) : null);
         }

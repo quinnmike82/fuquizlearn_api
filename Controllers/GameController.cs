@@ -25,10 +25,34 @@ namespace fuquizlearn_api.Controllers
         }
 
         [Authorize]
-        [HttpGet("get-all-by-classroomID/{classroomId}")]
+        [HttpPost("join-game/{gameId}")]
+        public async Task<IActionResult> Join(int gameId)
+        {
+            await _gameService.Join(gameId, Account);
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("get-all-by-classroom/{classroomId}")]
         public async Task<ActionResult<PagedResponse<GameResponse>>> GetAllByClassId(int classroomId, [FromQuery] PagedRequest option)
         {
             var result = await _gameService.GetAllByClassId(classroomId, option, Account);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("get-all-by-quizbank/{quizbankId}")]
+        public async Task<ActionResult<PagedResponse<GameResponse>>> GetAllByQuizBankId(int quizbankId, [FromQuery] PagedRequest option)
+        {
+            var result = await _gameService.GetAllByQuizBankId(quizbankId, option, Account);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("get-my-joined/")]
+        public async Task<ActionResult<PagedResponse<GameResponse>>> GetMyJoined([FromQuery] PagedRequest option)
+        {
+            var result = await _gameService.GetMyJoined(option, Account);
             return Ok(result);
         }
 
@@ -37,6 +61,14 @@ namespace fuquizlearn_api.Controllers
         public async Task<ActionResult<GameResponse>> GetById(int gameId)
         {
             var result = await _gameService.GetById(gameId, Account);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("get-quizes-in-game/{gameId}")]
+        public async Task<ActionResult<GameResponse>> GetQuizes(int gameId,[FromQuery] PagedRequest option)
+        {
+            var result = await _gameService.GetQuizes(gameId, option, Account);
             return Ok(result);
         }
 
@@ -65,7 +97,7 @@ namespace fuquizlearn_api.Controllers
         }
 
         [Authorize]
-        [HttpGet("my-game-record/{gameId}")]
+        [HttpGet("my-record-in-game/{gameId}")]
         public async Task<ActionResult<GameRecordResponse>> GetMyGameRecord(int gameId)
         {
             var result = await _gameService.GetMyGameRecord(gameId, Account);
@@ -73,11 +105,12 @@ namespace fuquizlearn_api.Controllers
         }
 
         [Authorize]
-        [HttpGet("all-game-record/{gameId}")]
-        public async Task<ActionResult<List<GameRecordResponse>>> GetAllGameRecord(int gameId)
+        [HttpGet("all-user-record-in-game/{gameId}")]
+        public async Task<ActionResult<PagedResponse<GameRecordResponse>>> GetAllGameRecord(int gameId,[FromQuery] PagedRequest option)
         {
-            var result = await _gameService.GetAllGameRecord(gameId, Account);
+            var result = await _gameService.GetAllGameRecord(gameId, option, Account);
             return Ok(result);
         }
+
     }
 }
