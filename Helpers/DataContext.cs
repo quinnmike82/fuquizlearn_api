@@ -25,6 +25,7 @@ public class DataContext : DbContext
     public DbSet<Plan> Plans { get; set; }
     public DbSet<PlanAccount> PlanAccounts { get; set; }
     public DbSet<Game> Games { get; set; }
+    public DbSet<GameQuiz> GameQuizs { get; set; }
     public DbSet<GameRecord> GameRecords { get; set; }
 
 
@@ -51,11 +52,6 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.PostId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<Game>().Property(a => a.GameQuizs)
-                .HasConversion(
-                    metadata => JsonConvert.SerializeObject(metadata),
-                    json => JsonConvert.DeserializeObject<List<GameQuiz>>(json))
-                .HasColumnType("jsonb");
         modelBuilder.Entity<GameRecord>().Property(gr => gr.AnswerHistories)
                 .HasConversion(
                     metadata => JsonConvert.SerializeObject(metadata),
