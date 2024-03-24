@@ -29,6 +29,7 @@ public interface IQuizBankService
     Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
     Task<ProgressResponse> GetProgress(int quizbankId, Account account);
     Task<QuizBankResponse> CopyQuizBank(int quizbankId, Account account);
+    Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -138,6 +139,20 @@ public class QuizBankService : IQuizBankService
     {
         var quizBank = GetQuizBank(id);
         return _mapper.Map<QuizBankResponse>(quizBank);
+    }
+
+    public async Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account)
+    {
+        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes)
+                                                .Include(c => c.Author)
+                                                .Where(q => q.Tags != null && q.Tags.Contains(tag))
+                                                .ToPagedAsync(options,
+            x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        return new PagedResponse<QuizBankResponse>
+        {
+            Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+            Metadata = quizBanks.Metadata
+        };
     }
 
     public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
