@@ -171,5 +171,19 @@ namespace fuquizlearn_api.Controllers
             await _classroomService.SentInvitationEmail(classroomId, batchMemberRequest, Account);
             return Ok();
         }
+        [HttpPost("banmember/{memberId}/{classroomId}")]
+        [Authorize]
+        public async Task<IActionResult> BanMember(int memberId, int classroomId)
+        {
+            await _classroomService.BanMember(classroomId, memberId, Account);
+            return Ok();
+        }
+        [HttpPost("unbanmember/{memberId}/{classroomId}")]
+        [Authorize]
+        public async Task<IActionResult> UnbanMember(int memberId, int classroomId)
+        { 
+            await _classroomService.UnbanMember(classroomId, memberId, Account);
+            return Ok();
+        }
     }
 }
