@@ -193,6 +193,20 @@ namespace fuquizlearn_api.Helpers
             CreateMap<GameQuiz, GameQuizResponse>().ForMember(x => x.Question, op => op.MapFrom(s => s.Quiz.Question));
             CreateMap<DateTime, DateTime>().ConvertUsing(i => DateTime.SpecifyKind(i, DateTimeKind.Utc));
             CreateMap<DateTime?, DateTime?>().ConvertUsing(i => i != null ? DateTime.SpecifyKind(i.Value, DateTimeKind.Utc) : null);
+            CreateMap<ClassroomMember, ClassroomMemberResponse>().ForMember(dest => dest.JoinDate, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                return src.Created;
+            })).ForMember(dest => dest.Classroom, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<ClassroomResponse>(src.Classroom);
+                return commentResponse;
+            })).ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Account);
+                return commentResponse;
+            }));
         }
     }
 }
