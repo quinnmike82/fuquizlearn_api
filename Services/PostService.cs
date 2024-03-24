@@ -4,12 +4,14 @@ using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Web;
@@ -59,7 +61,20 @@ namespace fuquizlearn_api.Services
             var post = await GetPost(id);
              if (post == null)
                 throw new KeyNotFoundException("Could not find Post");
-            return _mapper.Map<PostResponse>(post);
+             var postRes = _mapper.Map<PostResponse>(post);
+            if (int.TryParse(post.BankLink, out id))
+            {
+                var bank = await _context.QuizBanks.Include(c => c.Quizes).FirstOrDefaultAsync(c => c.Id == id);
+                if (bank != null)
+                    postRes.QuizBank = _mapper.Map<QuizBankResponse>(bank);
+            }
+            if (int.TryParse(post.GameLink, out id))
+            {
+                var game = await _context.Games.FirstOrDefaultAsync(c => c.Id == id);
+                if (game != null)
+                    postRes.Game = _mapper.Map<GameResponse>(game);
+            }
+            return postRes;
         }
 
         public async Task<PagedResponse<PostResponse>> GetAllPosts(int classroomId, PagedRequest options)
@@ -73,13 +88,20 @@ namespace fuquizlearn_api.Services
                 Metadata = posts.Metadata
             };
             var bank = new QuizBank();
+            var game = new Game();
             int id;
             foreach (var page in pages.Data)
             {
                 if (int.TryParse(page.BankLink, out id))
-                { bank = await _context.QuizBanks.FindAsync(id);
+                { bank = await _context.QuizBanks.Include(c => c.Quizes).FirstOrDefaultAsync(c => c.Id == id);
                 if (bank != null)
                     page.QuizBank = _mapper.Map<QuizBankResponse>(bank); }
+                if (int.TryParse(page.GameLink, out id))
+                {
+                    game = await _context.Games.FirstOrDefaultAsync(c => c.Id == id);
+                    if (game != null)
+                        page.Game = _mapper.Map<GameResponse>(game);
+                }
             }
             return pages;
         }
