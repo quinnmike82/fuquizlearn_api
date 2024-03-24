@@ -122,6 +122,36 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<QuizBankResponse>(quizBank);
         }
 
+        public async Task BanMember(int id, int memberId, Account account)
+        {
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
+            if (classroom == null)
+                throw new KeyNotFoundException("Cound not find Classroom");
+            if (memberId != classroom.Account.Id && account.Role != Role.Admin)
+                throw new UnauthorizedAccessException("Unauthorized");
+            var banmembers = Array.IndexOf(classroom.BanMembers, memberId);
+            if (banmembers != -1)
+            {
+                throw new AppException("Already Banned");
+            }
+            if (classroom.BanMembers == null)
+            {
+                classroom.BanMembers = new int[] { memberId };
+            }
+            else
+            {
+                classroom.BanMembers = classroom.BanMembers.Append(memberId).ToArray();
+            }
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
+            var member = banmembers = Array.IndexOf(classroom.AccountIds, memberId);
+            if (member != -1)
+            {
+                await RemoveMember(memberId, id, account);
+            }
+
+        }
+
         public async Task BanMember(int id, BatchMemberRequest membersRequest, Account account)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
