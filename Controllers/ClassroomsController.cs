@@ -199,5 +199,13 @@ namespace fuquizlearn_api.Controllers
             await _classroomService.LeaveClassroom(classroomId, Account);
             return Ok();
         }
+
+        [HttpGet("classroom/{classroomId}/quizbank/")]
+        [Authorize]
+        public async Task<ActionResult<PagedResponse<ClassroomResponse>>> GetAllBankFromClass(int classroomId, [FromQuery] PagedRequest options)
+        {
+            var result = await _classroomService.GetAllBankFromClass(classroomId, options, Account);
+            return Ok(result);
+        }
     }
 }
