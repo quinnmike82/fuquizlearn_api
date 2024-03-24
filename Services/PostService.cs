@@ -186,7 +186,7 @@ namespace fuquizlearn_api.Services
             }
             if(Array.IndexOf(post.ViewIds, account.Id) == -1)
             {
-                post.ViewIds.Append(account.Id);
+                post.ViewIds = post.ViewIds.Append(account.Id).ToArray();
                 _context.Posts.Update(post);
                 await _context.SaveChangesAsync();
                 return true;
