@@ -7,8 +7,10 @@ namespace fuquizlearn_api.Models.Classroom
     {
         public int Id { get; set; }
         public string GameName { get; set; }
+        public bool IsTest { get; set; }
         public int ClassroomId { get; set; }
         public int QuizBankId { get; set; }
+        public int NumberOfQuizzes { get; set; }
         public GameStatus Status { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }

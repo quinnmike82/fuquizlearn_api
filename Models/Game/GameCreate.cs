@@ -7,6 +7,7 @@ namespace fuquizlearn_api.Models.Classroom
     {
         [Required]
         public string GameName { get; set; }
+        public bool? IsTest { get; set; }
         public int? ClassroomId { get; set; }
         [Required]
         public int QuizBankId { get; set; }

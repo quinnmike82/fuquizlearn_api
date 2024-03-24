@@ -27,6 +27,7 @@ public class DataContext : DbContext
     public DbSet<Game> Games { get; set; }
     public DbSet<GameQuiz> GameQuizs { get; set; }
     public DbSet<GameRecord> GameRecords { get; set; }
+    public DbSet<AnswerHistory> AnswerHistories { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
@@ -52,10 +53,5 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.PostId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<GameRecord>().Property(gr => gr.AnswerHistories)
-                .HasConversion(
-                    metadata => JsonConvert.SerializeObject(metadata),
-                    json => JsonConvert.DeserializeObject<List<AnswerHistory>>(json))
-                .HasColumnType("jsonb");
     }
 }

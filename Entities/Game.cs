@@ -7,11 +7,13 @@ namespace fuquizlearn_api.Entities
     {
         public int Id { get; set; }
         public string GameName { get; set; }
+        public bool IsTest { get; set; } = false;
         public int? ClassroomId { get; set; }
         public Classroom? Classroom { get; set; }
         public int QuizBankId { get; set; }
         public QuizBank QuizBank { get; set; }
         public List<GameQuiz>? GameQuizs { get; set; }
+        public int NumberOfQuizzes { get; set; }
         public GameStatus Status { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }

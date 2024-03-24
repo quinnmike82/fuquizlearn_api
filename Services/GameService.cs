@@ -23,10 +23,12 @@ namespace fuquizlearn_api.Services
         Task<PagedResponse<GameRecordResponse>> GetAllGameRecord(int gameId, PagedRequest option, Account account);
         Task<GameResponse> GetById(int gameId, Account account);
         Task<PagedResponse<GameQuizResponse>> GetQuizes(int gameId, PagedRequest option, Account account);
-        Task<GameRecordResponse> GetMyGameRecord(int gameId, Account account);
+        Task<GameRecordResponse> GetUserGameRecord(int gameId, Account account, int userId);
         Task<PagedResponse<GameResponse>> GetMyJoined(PagedRequest option, Account account);
         Task Join(int gameId, Account account);
         Task<GameResponse> StartById(int gameId, Account account);
+        Task<PagedResponse<AnswerHistoryResponse>> GetUserAnswerHistory(int gameId, int userId, PagedRequest option, Account account);
+        Task<GameRecordResponse> SubmitTest(int gameId, AnswerHistoryRequest[] answerHistoryRequests, Account account);
     }
     public class GameService : IGameService
     {
@@ -66,12 +68,14 @@ namespace fuquizlearn_api.Services
             {
                 throw new AppException("Could not find quiz");
             }
-            var answerHistory = _mapper.Map<AnswerHistory>(answerHistoryRequest);
-            answerHistory.Quiz = _mapper.Map<QuizResponse>(quiz);
+            var answerHistory = await _context.AnswerHistories.FirstOrDefaultAsync(a => a.GameRecordId == gameRecord.Id && a.QuizId == quiz.Id);
+            
+            answerHistory ??= new AnswerHistory();
+            answerHistory.UserAnswer = answerHistoryRequest.UserAnswer;
+            answerHistory.GameRecordId = gameRecord.Id;
+            answerHistory.Quiz = quiz;
             answerHistory.IsCorrect = quiz.Answer.Equals(answerHistory.UserAnswer, StringComparison.OrdinalIgnoreCase);
-            gameRecord.AnswerHistories.RemoveAll(ah => ah.QuizId == answerHistory.QuizId);
-            gameRecord.AnswerHistories.Add(answerHistory);
-            _context.GameRecords.Update(gameRecord);
+            _context.AnswerHistories.Update(answerHistory);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<GameRecordResponse>(gameRecord);
@@ -115,6 +119,7 @@ namespace fuquizlearn_api.Services
             game.ClassroomId = gameCreate.ClassroomId;
             game.QuizBankId = quizBank.Id;
             game.Status = GameStatus.Created;
+            game.NumberOfQuizzes = gameCreate.Amount;
 
             _context.Games.Add(game);
             await _context.SaveChangesAsync();
@@ -199,7 +204,10 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorize");
             }
-            var gameRecords = await _context.GameRecords.Where(gr => gr.GameId == gameId).ToPagedAsync(option, gr => true);
+            var gameRecords = await _context.GameRecords.Include(g => g.Account)
+                                                        .Include(g => g.AnswerHistories)
+                                                        .Where(gr => gr.GameId == gameId)
+                                                        .ToPagedAsync(option, gr => true);
 
             return new PagedResponse<GameRecordResponse>
             {
@@ -229,11 +237,17 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
-            AutoUpdateGameStatus(ref game);
+
+            if(AutoUpdateGameStatus(ref game))
+            {
+                _context.Games.Update(game);
+                await _context.SaveChangesAsync();
+            }
+            
             return _mapper.Map<GameResponse>(game);
         }
 
-        public async Task<GameRecordResponse> GetMyGameRecord(int gameId, Account account)
+        public async Task<GameRecordResponse> GetUserGameRecord(int gameId, Account account, int userId)
         {
             var game = await _context.Games.Include(g => g.QuizBank).ThenInclude(q => q.Author)
                                .Include(g => g.Classroom).ThenInclude(c => c.Account)
@@ -255,7 +269,9 @@ namespace fuquizlearn_api.Services
                 throw new UnauthorizedAccessException("Unauthorized");
             }
 
-            var gameRecord = await _context.GameRecords.FirstOrDefaultAsync(g => g.GameId == gameId && g.Account.Id == account.Id);
+            var gameRecord = await _context.GameRecords.Include(g => g.AnswerHistories)
+                .Include(g => g.Account)
+                .FirstOrDefaultAsync(g => g.GameId == gameId && g.Account.Id == userId);
 
             if (gameRecord == null)
             {
@@ -353,7 +369,13 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
-            AutoUpdateGameStatus(ref game);
+
+            if (AutoUpdateGameStatus(ref game))
+            {
+                _context.Games.Update(game);
+                await _context.SaveChangesAsync();
+            }
+
             if (game.Status != GameStatus.OnGoing )
             {
                 throw new AppException("Game is not started or has been ended");
@@ -369,7 +391,6 @@ namespace fuquizlearn_api.Services
             {
                 AccountId = account.Id,
                 GameId = gameId,
-                AnswerHistories = new List<AnswerHistory>()
             };
 
             _context.GameRecords.Add(gameRecord);
@@ -406,12 +427,105 @@ namespace fuquizlearn_api.Services
                 Metadata = gamequizes.Metadata,
             };
         }
+        public async Task<PagedResponse<AnswerHistoryResponse>> GetUserAnswerHistory(int gameId, int userId, PagedRequest option, Account account)
+        {
+            var game = await _context.Games.Include(g => g.QuizBank).ThenInclude(q => q.Author)
+                               .Include(g => g.Classroom).ThenInclude(c => c.Account)
+                               .FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null)
+            {
+                throw new KeyNotFoundException("Could not find game");
+            }
+            var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
-        private void AutoUpdateGameStatus(ref Game game)
+            if (game.Classroom != null)
+            {
+                permission = game.Classroom.Account.Id == account.Id
+                        || (game.Classroom.AccountIds != null && game.Classroom.AccountIds.Contains(account.Id));
+            }
+
+            if (!permission)
+            {
+                throw new UnauthorizedAccessException("Unauthorized");
+            }
+            var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
+            if (gameRecord == null)
+            {
+                throw new AppException("User has not joined in the game yet");
+            }
+
+            var answerHistory = await _context.AnswerHistories.Include(a => a.Quiz)
+                .Where(a => a.GameRecordId == gameRecord.Id)
+                .ToPagedAsync(option, a => true);
+            return new PagedResponse<AnswerHistoryResponse>
+            {
+                Data = _mapper.Map<List<AnswerHistoryResponse>>(answerHistory.Data),
+                Metadata = answerHistory.Metadata,
+            };
+        }
+
+        public async Task<GameRecordResponse> SubmitTest(int gameId, AnswerHistoryRequest[] answerHistoryRequests, Account account)
+        {
+            var game = await _context.Games.Include(g => g.QuizBank)
+                                           .Include(g => g.Classroom).ThenInclude(c => c.Account)
+                                           .FirstOrDefaultAsync(g => g.Id == gameId);
+            if (game == null)
+            {
+                throw new KeyNotFoundException("Could not find game");
+            }
+
+            var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
+            if (gameRecord == null)
+            {
+                throw new AppException("User has not joined in the game yet");
+            }
+
+            if (game.Duration != null && DateTime.UtcNow > gameRecord.Created.AddMinutes(game.Duration ?? 0))
+            {
+                throw new AppException("Exceeding time limit");
+            }
+
+            foreach(var answerHistoryRequest in answerHistoryRequests)
+            {
+                var quiz = await _context.Quizes.FirstOrDefaultAsync(q => q.Id == answerHistoryRequest.QuizId);
+                if (quiz == null)
+                {
+                    throw new AppException("Could not find quiz");
+                }
+                var answerHistory = await _context.AnswerHistories.FirstOrDefaultAsync(a => a.GameRecordId == gameRecord.Id && a.QuizId == quiz.Id);
+
+                answerHistory ??= new AnswerHistory();
+                answerHistory.UserAnswer = answerHistoryRequest.UserAnswer;
+                answerHistory.GameRecordId = gameRecord.Id;
+                answerHistory.Quiz = quiz;
+                answerHistory.IsCorrect = quiz.Answer.Equals(answerHistory.UserAnswer, StringComparison.OrdinalIgnoreCase);
+                _context.AnswerHistories.Update(answerHistory);
+            }
+            
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<GameRecordResponse>(gameRecord);
+        }
+
+        private bool AutoUpdateGameStatus(ref Game game)
         {
             var now = DateTime.UtcNow;
-            if (game.StartTime < now && now < game.EndTime) game.Status = GameStatus.OnGoing;
-            if (game.EndTime < now) game.Status = GameStatus.Ended;
+            if(now < game.StartTime && game.Status != GameStatus.Created)
+            {
+                game.Status = GameStatus.Created;
+                return true;
+            }
+            if (game.StartTime < now && now < game.EndTime && game.Status != GameStatus.OnGoing)
+            {
+                game.Status = GameStatus.OnGoing;
+                return true;
+            }
+            if (game.EndTime < now && game.Status != GameStatus.Ended)
+            {
+                game.Status = GameStatus.Ended;
+                return true;
+            }
+            return false;
         }
         private List<GameQuiz> GetRandomQuizFormQuizbank(QuizBank quizBank, int amount, int gameId)
         {
