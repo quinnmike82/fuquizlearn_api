@@ -43,6 +43,7 @@ namespace fuquizlearn_api.Services
         Task UnbanMember(int id, BatchMemberRequest membersRequest, Account account);
         Task<PagedResponse<AccountResponse>> GetBanAccounts(int id, PagedRequest options);
         Task LeaveClassroom(int id, Account account);
+        Task<PagedResponse<QuizBankResponse>> GetAllBankFromClass(int classroomId, PagedRequest options, Account account);
     }
     public class ClassroomService : IClassroomService
     {
@@ -281,7 +282,7 @@ namespace fuquizlearn_api.Services
             }
             _context.QuizBanks.Update(newBank);
             if (classroom.BankIds != null)
-                classroom.BankIds.Append(newBank.Id);
+                classroom.BankIds = classroom.BankIds.Append(newBank.Id).ToArray();
             else classroom.BankIds = new int[] { newBank.Id };
             _context.QuizBanks.Update(newBank);
             _context.Classrooms.Update(classroom);
@@ -313,18 +314,17 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)
+        public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)   
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
-            if (classroom.isStudentAllowInvite)
+            var isAllow = classroom.Account.Id == account.Id;
+            if (!isAllow && classroom.isStudentAllowInvite)
             {
-                var isMember = classroom?.AccountIds?.Contains(account.Id);
-                if(isMember ==  false) throw new UnauthorizedAccessException("Unauthorized");
+                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
             }
-            else if(classroom.Account.Id != account.Id)
-                throw new UnauthorizedAccessException("Unauthorized");
+            if (!isAllow) throw new UnauthorizedAccessException("Unauthorized");
             string code = generateVerificationToken();
             var classroomCode = new ClassroomCode
             {
@@ -338,6 +338,36 @@ namespace fuquizlearn_api.Services
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
             return _mapper.Map<ClassroomCodeResponse>(classroomCode);
+        }
+
+        public async Task<PagedResponse<QuizBankResponse>> GetAllBankFromClass(int classroomId, PagedRequest options, Account account)
+        {
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            if (classroom == null)
+                throw new KeyNotFoundException("Could not find Classroom");
+            var isAllow = classroom.Account.Id == account.Id;
+            if (!isAllow && classroom.isStudentAllowInvite)
+            {
+                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
+            }
+            if (!isAllow) throw new UnauthorizedAccessException("Unauthorized");
+
+            var result = new PagedResponse<QuizBankResponse>
+            {
+                Data = new List<QuizBankResponse>(),
+                Metadata = new PagedMetadata(options.Skip,options.Take,0,false)
+            };
+
+            if (classroom.BankIds != null)
+            {
+                var quizbanks = await _context.QuizBanks.Where(q => classroom.BankIds.Contains(q.Id))
+                    .ToPagedAsync(options,
+                    x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+                result.Data = _mapper.Map<List<QuizBankResponse>>(quizbanks.Data);
+                result.Metadata = quizbanks.Metadata;
+            }
+            return result;
+
         }
 
         public async Task<List<ClassroomCodeResponse>> GetAllClassroomCodes(int classroomId)
@@ -595,7 +625,7 @@ namespace fuquizlearn_api.Services
                 _context.Classrooms.Update(classroom);
                 await _context.SaveChangesAsync();
 
-                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classroom?joinCode={code}"), classroom.Classname);
+                await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classrooms?code={code}"), classroom.Classname);
             }
         }
 
