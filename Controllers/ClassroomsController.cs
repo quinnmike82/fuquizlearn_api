@@ -171,18 +171,32 @@ namespace fuquizlearn_api.Controllers
             await _classroomService.SentInvitationEmail(classroomId, batchMemberRequest, Account);
             return Ok();
         }
-        [HttpPost("banmember/{memberId}/{classroomId}")]
+        [HttpPost("{classroomId}/users")]
         [Authorize]
-        public async Task<IActionResult> BanMember(int memberId, int classroomId)
+        public async Task<IActionResult> BanMember(int classroomId, [FromBody] BatchMemberRequest members)
         {
-            await _classroomService.BanMember(classroomId, memberId, Account);
+            await _classroomService.BanMember(classroomId, members, Account);
             return Ok();
         }
-        [HttpPost("unbanmember/{memberId}/{classroomId}")]
+        [HttpPut("{classroomId}/users")]
         [Authorize]
-        public async Task<IActionResult> UnbanMember(int memberId, int classroomId)
+        public async Task<IActionResult> UnbanMember(int classroomId, [FromBody] BatchMemberRequest members)
         { 
-            await _classroomService.UnbanMember(classroomId, memberId, Account);
+            await _classroomService.UnbanMember(classroomId, members, Account);
+            return Ok();
+        }
+        [HttpGet("{classroomId}/users")]
+        [Authorize]
+        public async Task<ActionResult<List<AccountResponse>>> UnbanMember(int classroomId, [FromQuery] PagedRequest options)
+        {
+            var users = await _classroomService.GetBanAccounts(classroomId, options);
+            return Ok(users);
+        }
+        [HttpPut("{classroomId}/leave")]
+        [Authorize]
+        public async Task<IActionResult> LeaveClassroom(int classroomId)
+        {
+            await _classroomService.LeaveClassroom(classroomId, Account);
             return Ok();
         }
     }

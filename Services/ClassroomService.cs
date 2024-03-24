@@ -12,6 +12,7 @@ using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Web;
 
@@ -38,8 +39,10 @@ namespace fuquizlearn_api.Services
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
         Task<PagedResponse<ClassroomResponse>> GetCurrentJoinedClassroom(PagedRequest options, Account account);
         Task<PagedResponse<ClassroomMemberResponse>> GetAllMember(int id, Account account, PagedRequest options);
-        Task BanMember(int id, int memberId, Account account);
-        Task UnbanMember(int id, int memberId, Account account);
+        Task BanMember(int id, BatchMemberRequest membersRequest, Account account);
+        Task UnbanMember(int id, BatchMemberRequest membersRequest, Account account);
+        Task<PagedResponse<AccountResponse>> GetBanAccounts(int id, PagedRequest options);
+        Task LeaveClassroom(int id, Account account);
     }
     public class ClassroomService : IClassroomService
     {
@@ -119,32 +122,34 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<QuizBankResponse>(quizBank);
         }
 
-        public async Task BanMember(int id, int memberId, Account account)
+        public async Task BanMember(int id, BatchMemberRequest membersRequest, Account account)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
-            if (memberId != classroom.Account.Id && account.Role != Role.Admin)
+            if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
-            var banmembers = Array.IndexOf(classroom.BanMembers, memberId);
-            if (banmembers != -1)
+            var banmembers = classroom.BanMembers.Intersect(membersRequest.MemberIds).Any();
+            if (banmembers)
             {
-                throw new AppException("Already Banned");
+                throw new AppException("Some Already Banned");
             }
             if (classroom.BanMembers == null)
             {
-                classroom.BanMembers = new int[] { memberId };
+                classroom.BanMembers = membersRequest.MemberIds.ToArray();
             }
             else
             {
-                classroom.BanMembers = classroom.BanMembers.Append(memberId).ToArray();
+                var newBans = classroom.BanMembers.ToList();
+                newBans.AddRange(membersRequest.MemberIds);
+                classroom.BanMembers = newBans.ToArray();
             }
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
-            var member = banmembers = Array.IndexOf(classroom.AccountIds, memberId);
-            if (member != -1)
+            var remove = classroom.AccountIds.ToList().Intersect(membersRequest.MemberIds);
+            if (remove.Count() > 0)
             {
-                await RemoveMember(memberId, id, account);
+                await BatchRemoveMember(classroom.Id, account,remove.ToList());
             }
 
         }
@@ -160,7 +165,7 @@ namespace fuquizlearn_api.Services
             }
             if ((bool)(classroom.BanMembers?.Intersect(memberIds).Any()))
             {
-                throw new Exception("Banned");
+                throw new AppException("Banned");
             }
 
             memberIds = memberIds.Distinct().ToList();
@@ -387,6 +392,25 @@ namespace fuquizlearn_api.Services
             };
         }
 
+        public async Task<PagedResponse<AccountResponse>> GetBanAccounts(int id, PagedRequest options)
+        {
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
+            if (classroom == null)
+            {
+                throw new KeyNotFoundException("Could not find classroom");
+            }
+
+            var banUsers = await _context.Accounts.Where(c => classroom.BanMembers.Contains(c.Id))
+                                                     .ToPagedAsync(options,
+                x => x.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<AccountResponse>
+            {
+                Data = _mapper.Map<IEnumerable<AccountResponse>>(banUsers.Data),
+                Metadata = banUsers.Metadata
+            };
+        }
+
         public async Task<ClassroomResponse> GetClassroomById(int id)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
@@ -444,6 +468,23 @@ namespace fuquizlearn_api.Services
             {
                 classroom.AccountIds = classroom.AccountIds.Append(account.Id).ToArray();
             }
+            _context.Classrooms.Update(classroom);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task LeaveClassroom(int id, Account account)
+        {
+            var classroomMember = await _context.ClassroomsMembers.FirstOrDefaultAsync(i => i.AccountId == account.Id && i.ClassroomId == id);
+            if (classroomMember == null)
+            {
+                throw new KeyNotFoundException("Could not find Classroom");
+            }
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
+            var ids = classroom.AccountIds.ToList();
+            ids.Remove(account.Id);
+            classroom.AccountIds = ids.ToArray();
+
+            _context.ClassroomsMembers.Remove(classroomMember);
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
         }
@@ -528,25 +569,24 @@ namespace fuquizlearn_api.Services
             }
         }
 
-        public async Task UnbanMember(int id, int memberId, Account account)
+        public async Task UnbanMember(int id, BatchMemberRequest membersRequest, Account account)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
-            if (memberId != classroom.Account.Id && account.Role != Role.Admin)
+            if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Unauthorized");
-            int indexToRemove = Array.IndexOf(classroom.BanMembers, memberId);
-
-            if (indexToRemove != -1)
+            var banmembers = membersRequest.MemberIds.Where(item => !classroom.BanMembers.Contains(item));
+            if (banmembers.Count() > 0)
             {
-                var updatedAccountIds = classroom.BanMembers.ToList();
-                updatedAccountIds.RemoveAt(indexToRemove);
-
-                classroom.BanMembers = updatedAccountIds.ToArray();
-
-                _context.Classrooms.Update(classroom);
-                await _context.SaveChangesAsync();
+                throw new AppException("Some arent banned" + banmembers);
+            } 
+            var updatedAccountIds = classroom.BanMembers.ToList();
+            foreach (var member in membersRequest.MemberIds)
+            {
+                updatedAccountIds.Remove(member);
             }
+            classroom.BanMembers = updatedAccountIds.ToArray();
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
         }
