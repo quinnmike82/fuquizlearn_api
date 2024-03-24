@@ -16,6 +16,7 @@ namespace fuquizlearn_api.Models.Posts
         public string? GameLink { get; set; }
         public string? BankLink { get; set; }
         public QuizBankResponse? QuizBank { get; set; }
+        public GameResponse? Game { get; set; }
         public int View { get; set; }
         public DateTime Created { get; set; } 
         public DateTime? Updated { get; set; }

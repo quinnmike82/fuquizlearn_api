@@ -281,7 +281,7 @@ namespace fuquizlearn_api.Services
             }
             _context.QuizBanks.Update(newBank);
             if (classroom.BankIds != null)
-                classroom.BankIds.Append(newBank.Id);
+                classroom.BankIds = classroom.BankIds.Append(newBank.Id).ToArray();
             else classroom.BankIds = new int[] { newBank.Id };
             _context.QuizBanks.Update(newBank);
             _context.Classrooms.Update(classroom);
