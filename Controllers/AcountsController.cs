@@ -64,6 +64,14 @@ public class AccountsController : BaseController
         return Ok(account);
     }
 
+    [Authorize]
+    [HttpPut("change-password")]
+    public async Task<ActionResult<AccountResponse>> ChangePassword(ChangePassRequest model)
+    {
+        var account = await _accountService.ChangePassword(model, Account);
+        return Ok(account);
+    }
+
     [AllowAnonymous]
     [HttpDelete("{id:int}")]
     public IActionResult Delete(int id)

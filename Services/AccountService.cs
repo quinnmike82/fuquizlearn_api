@@ -40,6 +40,7 @@ public interface IAccountService
     void Delete(int id);
     void BanAccount(int id, string origin);
     void WarningAccount(int id, string origin);
+    Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account);
 }
 
 public class AccountService : IAccountService
@@ -618,5 +619,22 @@ public class AccountService : IAccountService
             "QUIZLEARN - VIOLATION RULES WARNING",
             htmlContent
         );
+    }
+
+    public async Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account)
+    {
+        var entity = await _context.Accounts.FirstOrDefaultAsync(acc => acc.Id == account.Id);
+        if (entity == null)
+        {
+            throw new KeyNotFoundException("Could not find current account");
+        }
+        if(!BC.Verify(model.OldPassword, entity.PasswordHash))
+        {
+            throw new AppException("Wrong old password");
+        }
+        entity.PasswordHash = BC.HashPassword(model.Password);
+        _context.Accounts.Update(entity);
+        await _context.SaveChangesAsync();
+        return _mapper.Map<AccountResponse>(entity);
     }
 }

@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Models.Accounts;
@@ -8,6 +8,7 @@ using fuquizlearn_api.Models.Plan;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
+using SendGrid.Helpers.Mail;
 
 namespace fuquizlearn_api.Helpers
 {
@@ -184,6 +185,28 @@ namespace fuquizlearn_api.Helpers
                         return true;
                     }
                 ));
+            CreateMap<GameCreate, Game>();
+            CreateMap<Game, GameResponse>();
+            CreateMap<AnswerHistoryRequest, AnswerHistory>();
+            CreateMap<AnswerHistory, AnswerHistoryResponse>();
+            CreateMap<GameRecord, GameRecordResponse>();
+            CreateMap<GameQuiz, GameQuizResponse>().ForMember(x => x.Question, op => op.MapFrom(s => s.Quiz.Question));
+            CreateMap<DateTime, DateTime>().ConvertUsing(i => DateTime.SpecifyKind(i, DateTimeKind.Utc));
+            CreateMap<DateTime?, DateTime?>().ConvertUsing(i => i != null ? DateTime.SpecifyKind(i.Value, DateTimeKind.Utc) : null);
+            CreateMap<ClassroomMember, ClassroomMemberResponse>().ForMember(dest => dest.JoinDate, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                return src.Created;
+            })).ForMember(dest => dest.Classroom, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<ClassroomResponse>(src.Classroom);
+                return commentResponse;
+            })).ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Account);
+                return commentResponse;
+            }));
         }
     }
 }

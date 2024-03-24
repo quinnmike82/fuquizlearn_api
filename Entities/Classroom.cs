@@ -12,6 +12,7 @@ namespace fuquizlearn_api.Entities
         public List<ClassroomCode> ClassroomCodes { get; set; }
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public int[]? AccountIds { get; set; } = new int[0];
+        public int[]? BanMembers { get; set; } = new int[0];
         public DateTime? DeletedAt { get; set; }
         public bool isStudentAllowInvite { get; set; } = false;
         public bool OwnsToken(string code)

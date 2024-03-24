@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using fuquizlearn_api.Helpers;
@@ -12,9 +13,11 @@ using fuquizlearn_api.Helpers;
 namespace fuquizlearn_api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20240320172355_Game")]
+    partial class Game
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,9 +109,6 @@ namespace fuquizlearn_api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int[]>("AccountIds")
-                        .HasColumnType("integer[]");
-
-                    b.Property<int[]>("BanMembers")
                         .HasColumnType("integer[]");
 
                     b.Property<int[]>("BankIds")
@@ -236,14 +236,11 @@ namespace fuquizlearn_api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ClassroomId")
+                    b.Property<int>("ClassroomId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Duration")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("EndTime")
                         .HasColumnType("timestamp with time zone");
@@ -252,8 +249,8 @@ namespace fuquizlearn_api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("QuizBankId")
-                        .HasColumnType("integer");
+                    b.Property<string>("GameQuizs")
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
@@ -268,35 +265,7 @@ namespace fuquizlearn_api.Migrations
 
                     b.HasIndex("ClassroomId");
 
-                    b.HasIndex("QuizBankId");
-
                     b.ToTable("Games");
-                });
-
-            modelBuilder.Entity("fuquizlearn_api.Entities.GameQuiz", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("GameId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("QuizId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameId");
-
-                    b.HasIndex("QuizId");
-
-                    b.ToTable("GameQuizs");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.GameRecord", b =>
@@ -710,36 +679,11 @@ namespace fuquizlearn_api.Migrations
                 {
                     b.HasOne("fuquizlearn_api.Entities.Classroom", "Classroom")
                         .WithMany()
-                        .HasForeignKey("ClassroomId");
-
-                    b.HasOne("fuquizlearn_api.Entities.QuizBank", "QuizBank")
-                        .WithMany()
-                        .HasForeignKey("QuizBankId")
+                        .HasForeignKey("ClassroomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Classroom");
-
-                    b.Navigation("QuizBank");
-                });
-
-            modelBuilder.Entity("fuquizlearn_api.Entities.GameQuiz", b =>
-                {
-                    b.HasOne("fuquizlearn_api.Entities.Game", "Game")
-                        .WithMany("GameQuizs")
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("fuquizlearn_api.Entities.Quiz", "Quiz")
-                        .WithMany()
-                        .HasForeignKey("QuizId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Game");
-
-                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.GameRecord", b =>
@@ -834,11 +778,6 @@ namespace fuquizlearn_api.Migrations
             modelBuilder.Entity("fuquizlearn_api.Entities.Classroom", b =>
                 {
                     b.Navigation("ClassroomCodes");
-                });
-
-            modelBuilder.Entity("fuquizlearn_api.Entities.Game", b =>
-                {
-                    b.Navigation("GameQuizs");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Post", b =>

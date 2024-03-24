@@ -1,8 +1,10 @@
 ﻿using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Entities;
+using fuquizlearn_api.Models.Accounts;
 using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
+using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -35,6 +37,14 @@ namespace fuquizlearn_api.Controllers
                 if (result == null)
                     return NotFound();
                 return Ok(result);
+        }
+
+        [HttpGet("get-all-member/{id}")]
+        [Authorize]
+        public async Task<ActionResult<PagedResponse<AccountResponse>>> GetAllMember(int id,[FromQuery] PagedRequest options)
+        {
+            var result = await _classroomService.GetAllMember(id, Account, options);
+            return Ok(result);
         }
 
         [HttpGet]
@@ -159,6 +169,34 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> SentInvitationEmail(int classroomId, [FromBody] BatchMemberRequest batchMemberRequest)
         {
             await _classroomService.SentInvitationEmail(classroomId, batchMemberRequest, Account);
+            return Ok();
+        }
+        [HttpPost("{classroomId}/users")]
+        [Authorize]
+        public async Task<IActionResult> BanMember(int classroomId, [FromBody] BatchMemberRequest members)
+        {
+            await _classroomService.BanMember(classroomId, members, Account);
+            return Ok();
+        }
+        [HttpPut("{classroomId}/users")]
+        [Authorize]
+        public async Task<IActionResult> UnbanMember(int classroomId, [FromBody] BatchMemberRequest members)
+        { 
+            await _classroomService.UnbanMember(classroomId, members, Account);
+            return Ok();
+        }
+        [HttpGet("{classroomId}/users")]
+        [Authorize]
+        public async Task<ActionResult<List<AccountResponse>>> UnbanMember(int classroomId, [FromQuery] PagedRequest options)
+        {
+            var users = await _classroomService.GetBanAccounts(classroomId, options);
+            return Ok(users);
+        }
+        [HttpPut("{classroomId}/leave")]
+        [Authorize]
+        public async Task<IActionResult> LeaveClassroom(int classroomId)
+        {
+            await _classroomService.LeaveClassroom(classroomId, Account);
             return Ok();
         }
     }

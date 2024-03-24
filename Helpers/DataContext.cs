@@ -24,6 +24,10 @@ public class DataContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Plan> Plans { get; set; }
     public DbSet<PlanAccount> PlanAccounts { get; set; }
+    public DbSet<Game> Games { get; set; }
+    public DbSet<GameQuiz> GameQuizs { get; set; }
+    public DbSet<GameRecord> GameRecords { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -48,5 +52,10 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.PostId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<GameRecord>().Property(gr => gr.AnswerHistories)
+                .HasConversion(
+                    metadata => JsonConvert.SerializeObject(metadata),
+                    json => JsonConvert.DeserializeObject<List<AnswerHistory>>(json))
+                .HasColumnType("jsonb");
     }
 }
