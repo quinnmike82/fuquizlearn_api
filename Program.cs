@@ -51,6 +51,7 @@ var builder = WebApplication.CreateBuilder(args);
                 new string[] { }
             }
         });
+        option.EnableAnnotations();
     });
     
     AppSettings Config(IServiceCollection services, IConfiguration configuration)

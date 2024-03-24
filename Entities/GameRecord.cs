@@ -1,6 +1,4 @@
-﻿using fuquizlearn_api.Models.Quiz;
-
-namespace fuquizlearn_api.Entities
+﻿namespace fuquizlearn_api.Entities
 {
     public class GameRecord
     {
@@ -17,8 +15,11 @@ namespace fuquizlearn_api.Entities
 
     public class AnswerHistory
     {
+        public int Id { get; set; }
+        public int GameRecordId { get; set; }
+        public GameRecord GameRecord { get; set; }
         public int QuizId { get; set; }
-        public QuizResponse Quiz { get; set; }
+        public Quiz Quiz { get; set; }
         public string UserAnswer { get; set; }
         public bool IsCorrect { get; set; }
     }

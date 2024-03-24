@@ -12,7 +12,6 @@ namespace fuquizlearn_api.Models.Classroom
         public GameResponse Game { get; set; }
         public int AccountId { get; set; }
         public AccountResponse Account { get; set; }
-        public List<AnswerHistoryResponse> AnswerHistories { get; set; }
         public int TotalMark {  get; set; }
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
