@@ -20,7 +20,7 @@ namespace fuquizlearn_api.Controllers
         [SwaggerOperation("Create a Game/Test")]
         [Authorize]
         [HttpPost()]
-        public async Task<ActionResult<GameResponse>> Create([FromQuery] GameCreate gameCreate)
+        public async Task<ActionResult<GameResponse>> Create([FromBody] GameCreate gameCreate)
         {
             var result = await _gameService.CreateGame(gameCreate, Account);
             return Ok(result);
