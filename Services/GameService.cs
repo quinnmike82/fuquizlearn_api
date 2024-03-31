@@ -169,7 +169,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException($"Can not found classroom with id: {classroomId}");
             }
-            if (classroom.Account.Id != account.Id || classroom.AccountIds.Contains(account.Id))
+            if (classroom.Account.Id != account.Id && classroom.AccountIds.Contains(account.Id))
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }

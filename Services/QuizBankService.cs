@@ -28,7 +28,7 @@ public interface IQuizBankService
     Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
     Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
     Task<ProgressResponse> GetProgress(int quizbankId, Account account);
-    Task<QuizBankResponse> CopyQuizBank(int quizbankId, Account account);
+    Task<QuizBankResponse> CopyQuizBank(string newQuizBankName,int quizbankId, Account account);
     Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account);
 }
 
@@ -58,17 +58,19 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public async Task<QuizBankResponse> CopyQuizBank(int quizbankId, Account account)
+    public async Task<QuizBankResponse> CopyQuizBank(string newQuizBankName,int quizbankId, Account account)
     {
         var quizBank = GetQuizBank(quizbankId);
+        var newName = newQuizBankName.Trim() != "" ? newQuizBankName : quizBank.BankName;
         var newBank = new QuizBank
         {
-            BankName = quizBank.BankName,
+            BankName = newName,
             Description = quizBank.Description,
             Visibility = quizBank.Visibility,
-            Author = account
+            Author = account,
+            Tags = quizBank.Tags,
+            Quizes = new List<Quiz>()
         };
-        newBank.Quizes = new List<Quiz>();
         foreach (var quiz in quizBank.Quizes)
         {
             var newQuiz = new QuizCreate
