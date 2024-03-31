@@ -66,7 +66,8 @@ public class QuizBankService : IQuizBankService
             BankName = quizBank.BankName,
             Description = quizBank.Description,
             Visibility = quizBank.Visibility,
-            Author = account
+            Author = account,
+            Tags = quizBank.Tags
         };
         newBank.Quizes = new List<Quiz>();
         foreach (var quiz in quizBank.Quizes)
