@@ -33,7 +33,7 @@ namespace fuquizlearn_api.Services
         Task<List<ClassroomCodeResponse>> GetAllClassroomCodes(int classroomId);
         Task JoinClassroomWithCode(string classroomCode, Account account);
         Task<QuizBankResponse> AddQuizBank(int classroomId, QuizBankCreate model, Account account);
-        Task CopyQuizBank(int quizbankId, int classroomId, Account account);
+        Task CopyQuizBank(int quizbankId, int classroomId, string newName, Account account);
         Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds);
         Task BatchAddMember(int classroomId, Account account, List<int> memberIds);
         Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account);
@@ -250,7 +250,7 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task CopyQuizBank(int quizbankId, int classroomId, Account account)
+        public async Task CopyQuizBank(int quizbankId, int classroomId, string newName, Account account)
         {
             var quizBank = await _context.QuizBanks.Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == quizbankId);
             if (quizBank == null)
@@ -260,12 +260,15 @@ namespace fuquizlearn_api.Services
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (account.Id != classroom.Account.Id && account.Role != Role.Admin && Array.IndexOf(classroom.AccountIds,account.Id) == -1)
                 throw new UnauthorizedAccessException("Unauthorized");
+            
+            var newQuizBankName = newName != "" ? newName : quizBank.BankName;
             var newBank = new QuizBank
             {
-                BankName = quizBank.BankName,
+                BankName = newQuizBankName,
                 Description = quizBank.Description,
                 Visibility = quizBank.Visibility,
-                Author = account
+                Author = account,
+                Tags = quizBank.Tags
             };
             _context.QuizBanks.Add(newBank);
             await _context.SaveChangesAsync();
