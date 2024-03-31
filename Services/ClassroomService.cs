@@ -261,7 +261,7 @@ namespace fuquizlearn_api.Services
             if (account.Id != classroom.Account.Id && account.Role != Role.Admin && Array.IndexOf(classroom.AccountIds,account.Id) == -1)
                 throw new UnauthorizedAccessException("Unauthorized");
             
-            var newQuizBankName = newName != "" ? newName : quizBank.BankName;
+            var newQuizBankName = newName.Trim() != "" ? newName : quizBank.BankName;
             var newBank = new QuizBank
             {
                 BankName = newQuizBankName,

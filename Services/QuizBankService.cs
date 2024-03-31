@@ -61,7 +61,7 @@ public class QuizBankService : IQuizBankService
     public async Task<QuizBankResponse> CopyQuizBank(string newQuizBankName,int quizbankId, Account account)
     {
         var quizBank = GetQuizBank(quizbankId);
-        var newName = newQuizBankName != "" ? newQuizBankName : quizBank.BankName;
+        var newName = newQuizBankName.Trim() != "" ? newQuizBankName : quizBank.BankName;
         var newBank = new QuizBank
         {
             BankName = newName,
