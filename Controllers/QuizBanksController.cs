@@ -109,9 +109,10 @@ public class QuizBankController : BaseController
 
     [HttpPost("copyquizbank/{quizbankId}")]
     [Authorize]
-    public async Task<ActionResult<QuizBankResponse>> CopyQuizBank(int quizbankId)
+    public async Task<ActionResult<QuizBankResponse>> CopyQuizBank([FromBody] QuizBankUpdate quizBankUpdate, int quizbankId)
     {
-        var result = await _quizBankService.CopyQuizBank(quizbankId, Account);
+        var newName = quizBankUpdate.BankName ?? "";
+        var result = await _quizBankService.CopyQuizBank(newName, quizbankId, Account);
         return Ok(result);
     }
 }
