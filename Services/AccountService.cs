@@ -587,6 +587,23 @@ public class AccountService : IAccountService
             htmlContent
         );
     }
+    private void SendUnbanEmail(Account account, string origin)
+    {
+        var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var projectDirectory =
+            Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+        var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "unban.html");
+        var htmlContent = File.ReadAllText(htmlFilePath);
+        htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+        htmlContent = htmlContent.Replace("{link}", "FRONT END");
+        htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+        _emailService.SendAsync(
+            account.Email,
+            "QUIZLEARN - GOODBYE",
+            htmlContent
+        );
+    }
 
     private void SendInviteEmail(Account from, Account to, string classroomName, string origin)
     {
@@ -654,7 +671,7 @@ public class AccountService : IAccountService
         _context.SaveChanges();
 
         // Send the ban email
-        SendBanEmail(account, origin);
+        SendUnbanEmail(account, origin);
     }
 
     public async Task<PagedResponse<AccountResponse>> GetBannedAccount(PagedRequest options)
