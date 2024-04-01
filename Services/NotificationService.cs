@@ -22,6 +22,7 @@ namespace fuquizlearn_api.Services
         Task<PagedResponse<NotificationResponse>> GetNotificationByAccount(int Id, PagedRequest options);
         Task<NotificationResponse> ReadNotification(int id, Account account);
         Task<int> GetUnread(Account account);
+        Task NotificationTrigger(List<int> userIds, string type, string description, string objectName);
     }
     public class NotificationService : INotificationService
     {
@@ -121,5 +122,26 @@ namespace fuquizlearn_api.Services
             await _context.SaveChangesAsync();
             return _mapper.Map<NotificationResponse>(noti);
         }
+
+        public async Task NotificationTrigger(List<int> userIds, string type, string description, string objectName)
+        {
+            foreach(var user in userIds)
+            {
+                var account = await _context.Accounts.FirstOrDefaultAsync(c => c.Id == user);
+                if(account == null)
+                {
+                    throw new KeyNotFoundException("Not found User");
+                }
+                var noti = new NotificationCreate
+                {
+                    AccountId = account.Id,
+                    Title = description,
+                    Type = type,
+                    ObjectName = objectName
+                };
+                await CreateNotification(noti);
+            }
+        }
+
     }
 }
