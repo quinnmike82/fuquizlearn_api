@@ -34,7 +34,7 @@ public interface IAccountService
     string ForgotPassword(ForgotPasswordRequest model, string origin);
     void ResetPassword(ResetPasswordRequest model);
     Account GetByEmail(string email);
-    Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options);
+    Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options);
     AccountResponse GetById(int id);
     AccountResponse Create(CreateRequest model);
     AccountResponse Update(int id, UpdateRequest model);
@@ -43,7 +43,7 @@ public interface IAccountService
     void UnbanAccount(int id, string origin);
     void WarningAccount(int id, string origin);
 
-    Task<PagedResponse<AccountResponse>> GetBannedAccount(PagedRequest options);
+    Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options);
 
     Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account);
 
@@ -299,13 +299,13 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public async Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options)
+    public async Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options)
     {
         var accounts = await _context.Accounts.ToPagedAsync(options,
             x => x.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-        return new PagedResponse<AccountResponse>
+        return new PagedResponse<AdminAccountResponse>
         {
-            Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+            Data = _mapper.Map<IEnumerable<AdminAccountResponse>>(accounts.Data),
             Metadata = accounts.Metadata
         };
     }
@@ -674,13 +674,13 @@ public class AccountService : IAccountService
         SendUnbanEmail(account, origin);
     }
 
-    public async Task<PagedResponse<AccountResponse>> GetBannedAccount(PagedRequest options)
+    public async Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options)
     {
         var accounts = await _context.Accounts.Where(i => i.isBan != null).ToPagedAsync(options,
    q => q.Username.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-        return new PagedResponse<AccountResponse>
+        return new PagedResponse<AdminAccountResponse>
         {
-            Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+            Data = _mapper.Map<IEnumerable<AdminAccountResponse>>(accounts.Data),
             Metadata = accounts.Metadata
         };
     }
