@@ -10,6 +10,7 @@ using fuquizlearn_api.Entities;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
@@ -41,7 +42,11 @@ public interface IAccountService
     void BanAccount(int id, string origin);
     void UnbanAccount(int id, string origin);
     void WarningAccount(int id, string origin);
+
+    Task<PagedResponse<AccountResponse>> GetBannedAccount(PagedRequest options);
+
     Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account);
+
 }
 
 public class AccountService : IAccountService
@@ -650,5 +655,16 @@ public class AccountService : IAccountService
 
         // Send the ban email
         SendBanEmail(account, origin);
+    }
+
+    public async Task<PagedResponse<AccountResponse>> GetBannedAccount(PagedRequest options)
+    {
+        var accounts = await _context.Accounts.Where(i => i.isBan != null).ToPagedAsync(options,
+   q => q.Username.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        return new PagedResponse<AccountResponse>
+        {
+            Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+            Metadata = accounts.Metadata
+        };
     }
 }
