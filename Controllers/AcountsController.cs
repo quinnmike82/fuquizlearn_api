@@ -28,7 +28,7 @@ public class AccountsController : BaseController
         return Ok(accounts);
     }
     [AllowAnonymous]
-    [HttpGet]
+    [HttpGet("ban/users")]
     public async Task<ActionResult<IEnumerable<AccountResponse>>> GetbanAccount([FromQuery] PagedRequest options)
     {
         var accounts = await _accountService.GetBannedAccount(options);
