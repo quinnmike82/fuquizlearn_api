@@ -39,6 +39,7 @@ public interface IAccountService
     AccountResponse Update(int id, UpdateRequest model);
     void Delete(int id);
     void BanAccount(int id, string origin);
+    void UnbanAccount(int id, string origin);
     void WarningAccount(int id, string origin);
     Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account);
 }
@@ -636,5 +637,18 @@ public class AccountService : IAccountService
         _context.Accounts.Update(entity);
         await _context.SaveChangesAsync();
         return _mapper.Map<AccountResponse>(entity);
+    }
+
+    public void UnbanAccount(int id, string origin)
+    {
+        var account = getAccount(id);
+
+        // Update the database to mark the account as banned
+        account.isBan = null;
+        _context.Accounts.Update(account);
+        _context.SaveChanges();
+
+        // Send the ban email
+        SendBanEmail(account, origin);
     }
 }

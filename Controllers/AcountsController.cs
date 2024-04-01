@@ -98,6 +98,20 @@ public class AccountsController : BaseController
             return BadRequest(new { message = ex.Message });
         }
     }
+    [AllowAnonymous]
+    [HttpPost("unban/{id:int}")]
+    public IActionResult UnbanAccount(int id)
+    {
+        try
+        {
+            _accountService.UnbanAccount(id, Request.Headers["origin"]);
+            return Ok(new { message = "Account unbanned successfully" });
+        }
+        catch (AppException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [AllowAnonymous]
     [HttpPost("warning/{id:int}")]
