@@ -10,6 +10,7 @@ using fuquizlearn_api.Entities;
 using fuquizlearn_api.Extensions;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Accounts;
+using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
@@ -33,14 +34,19 @@ public interface IAccountService
     string ForgotPassword(ForgotPasswordRequest model, string origin);
     void ResetPassword(ResetPasswordRequest model);
     Account GetByEmail(string email);
-    Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options);
+    Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options);
     AccountResponse GetById(int id);
     AccountResponse Create(CreateRequest model);
     AccountResponse Update(int id, UpdateRequest model);
     void Delete(int id);
     void BanAccount(int id, string origin);
+    void UnbanAccount(int id, string origin);
     void WarningAccount(int id, string origin);
+
+    Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options);
+
     Task<AccountResponse> ChangePassword(ChangePassRequest model, Account account);
+
 }
 
 public class AccountService : IAccountService
@@ -293,13 +299,13 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public async Task<PagedResponse<AccountResponse>> GetAll(PagedRequest options)
+    public async Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options)
     {
         var accounts = await _context.Accounts.ToPagedAsync(options,
             x => x.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-        return new PagedResponse<AccountResponse>
+        return new PagedResponse<AdminAccountResponse>
         {
-            Data = _mapper.Map<IEnumerable<AccountResponse>>(accounts.Data),
+            Data = _mapper.Map<IEnumerable<AdminAccountResponse>>(accounts.Data),
             Metadata = accounts.Metadata
         };
     }
@@ -581,6 +587,23 @@ public class AccountService : IAccountService
             htmlContent
         );
     }
+    private void SendUnbanEmail(Account account, string origin)
+    {
+        var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var projectDirectory =
+            Path.Combine(assemblyDirectory, "..", "..", ".."); // Go up three levels from AccountService.cs
+        var htmlFilePath = Path.Combine(projectDirectory, "EmailTemplate", "unban.html");
+        var htmlContent = File.ReadAllText(htmlFilePath);
+        htmlContent = htmlContent.Replace("{user-name}", account.FullName);
+        htmlContent = htmlContent.Replace("{link}", "FRONT END");
+        htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
+
+        _emailService.SendAsync(
+            account.Email,
+            "QUIZLEARN - GOODBYE",
+            htmlContent
+        );
+    }
 
     private void SendInviteEmail(Account from, Account to, string classroomName, string origin)
     {
@@ -636,5 +659,29 @@ public class AccountService : IAccountService
         _context.Accounts.Update(entity);
         await _context.SaveChangesAsync();
         return _mapper.Map<AccountResponse>(entity);
+    }
+
+    public void UnbanAccount(int id, string origin)
+    {
+        var account = getAccount(id);
+
+        // Update the database to mark the account as banned
+        account.isBan = null;
+        _context.Accounts.Update(account);
+        _context.SaveChanges();
+
+        // Send the ban email
+        SendUnbanEmail(account, origin);
+    }
+
+    public async Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options)
+    {
+        var accounts = await _context.Accounts.Where(i => i.isBan != null).ToPagedAsync(options,
+   q => q.Username.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        return new PagedResponse<AdminAccountResponse>
+        {
+            Data = _mapper.Map<IEnumerable<AdminAccountResponse>>(accounts.Data),
+            Metadata = accounts.Metadata
+        };
     }
 }

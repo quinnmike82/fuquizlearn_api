@@ -27,6 +27,13 @@ public class AccountsController : BaseController
         var accounts = await _accountService.GetAll(options);
         return Ok(accounts);
     }
+    [AllowAnonymous]
+    [HttpGet("ban/users")]
+    public async Task<ActionResult<IEnumerable<AccountResponse>>> GetbanAccount([FromQuery] PagedRequest options)
+    {
+        var accounts = await _accountService.GetBannedAccount(options);
+        return Ok(accounts);
+    }
 
     [AllowAnonymous]
     [HttpGet("{id:int}")]
@@ -92,6 +99,20 @@ public class AccountsController : BaseController
         {
             _accountService.BanAccount(id, Request.Headers["origin"]);
             return Ok(new { message = "Account banned successfully" });
+        }
+        catch (AppException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [AllowAnonymous]
+    [HttpPost("unban/{id:int}")]
+    public IActionResult UnbanAccount(int id)
+    {
+        try
+        {
+            _accountService.UnbanAccount(id, Request.Headers["origin"]);
+            return Ok(new { message = "Account unbanned successfully" });
         }
         catch (AppException ex)
         {

@@ -18,6 +18,7 @@ namespace fuquizlearn_api.Helpers
         public AutoMapperProfile()
         {
             CreateMap<Account, AccountResponse>().ForMember(x => x.Dob, op => op.MapFrom(src => src.Dob.ToLocalTime()));
+            CreateMap<Account, AdminAccountResponse>().ForMember(x => x.Dob, op => op.MapFrom(src => src.Dob.ToLocalTime()));
 
             CreateMap<Account, AuthenticateResponse>().ForMember(x => x.Dob, op => op.MapFrom(src => src.Dob.ToLocalTime()));
 
