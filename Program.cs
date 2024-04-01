@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
@@ -65,6 +66,7 @@ var builder = WebApplication.CreateBuilder(args);
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
+
     var sendGridApiKey = builder.Configuration.GetValue<string>("AppSettings:SendGridApiKey");
     if (sendGridApiKey == null) throw new AppException("No SendGrid api key provided !");
 
@@ -97,6 +99,11 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddHttpClient("GeminiAITextAndImage", opt =>
     {
         opt.BaseAddress = new Uri($"{appSettings.TextAndImageUrl}");
+    });
+    
+    services.AddHttpClient("Gemini Embedding", opt =>
+    {
+        opt.BaseAddress = new Uri($"{appSettings.EmbeddingUrl}");
     });
 }
 

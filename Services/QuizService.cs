@@ -1,5 +1,4 @@
-﻿
-using AutoMapper;
+﻿using AutoMapper;
 using fuquizlearn_api.Entities;
 using fuquizlearn_api.Enum;
 using fuquizlearn_api.Extensions;
@@ -17,6 +16,8 @@ namespace fuquizlearn_api.Services
         Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options);
         QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
         QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
+        QuizResponse GetQuizById(int quizId);
+        QuizResponse UpdateQuiz(int quizId, QuizUpdate model); 
         void DeleteQuizInBank(int bankId, int quizId, Account account);
     }
 
@@ -24,6 +25,7 @@ namespace fuquizlearn_api.Services
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        private IQuizService _quizServiceImplementation;
 
         public QuizService(DataContext context, IMapper mapper)
         {
@@ -44,6 +46,23 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<QuizResponse>(quiz);
         }
 
+        public QuizResponse GetQuizById(int quizId)
+        {
+            var quiz = _context.Quizes.Find(quizId);    
+            if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
+            return _mapper.Map<QuizResponse>(quiz);     
+        }
+
+        public QuizResponse UpdateQuiz(int quizId, QuizUpdate model)
+        {
+            var quiz = _context.Quizes.Find(quizId);
+            if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
+            _mapper.Map(model, quiz);
+            quiz.Updated = DateTime.UtcNow;
+            _context.SaveChanges();
+            return _mapper.Map<QuizResponse>(quiz); 
+        }
+
         public void DeleteQuizInBank(int bankId, int quizId, Account account)
         {
             CheckQuizBank(bankId, account);
@@ -52,7 +71,8 @@ namespace fuquizlearn_api.Services
             _context.SaveChanges();
         }
 
-        public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options)
+        public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser,
+            QuizPagedRequest options)
         {
             CheckQuizBank(bankId, currentUser);
             if (options.IsGetAll)
@@ -66,7 +86,7 @@ namespace fuquizlearn_api.Services
             }
 
             var pagedQuizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToPagedAsync(options,
-               q => q.Question.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+                q => q.Question.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<QuizResponse>
             {
                 Data = _mapper.Map<IEnumerable<QuizResponse>>(pagedQuizes.Data),
@@ -83,7 +103,8 @@ namespace fuquizlearn_api.Services
             quiz.Updated = DateTime.UtcNow;
             _context.SaveChanges();
 
-            return _mapper.Map<QuizResponse>(quiz); ;
+            return _mapper.Map<QuizResponse>(quiz);
+            ;
         }
 
         private QuizBank CheckQuizBank(int bankId, Account currentUser)
@@ -101,6 +122,7 @@ namespace fuquizlearn_api.Services
                     if (quizBank.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return quizBank;
                 }
             }
+
             throw new UnauthorizedAccessException();
         }
 
@@ -111,6 +133,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find the quiz");
             }
+
             return quiz;
         }
     }

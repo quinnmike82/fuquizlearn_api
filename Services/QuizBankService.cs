@@ -9,7 +9,10 @@ using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Threading.Channels;
 using System.Web;
+using NpgsqlTypes;
+using Pgvector;
 
 namespace fuquizlearn_api.Services;
 
@@ -17,7 +20,7 @@ public interface IQuizBankService
 {
     Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options);
     QuizBankResponse GetById(int id);
-    QuizBankResponse Create(Account currentUser, QuizBankCreate model);
+    Task<QuizBankResponse> Create(Account currentUser, QuizBankCreate model);
     QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser);
     void Delete(int id, Account currentUser);
     void DeleteQuiz(int id, int quizId, Account account);
@@ -28,7 +31,7 @@ public interface IQuizBankService
     Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
     Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
     Task<ProgressResponse> GetProgress(int quizbankId, Account account);
-    Task<QuizBankResponse> CopyQuizBank(string newQuizBankName,int quizbankId, Account account);
+    Task<QuizBankResponse> CopyQuizBank(string newQuizBankName, int quizbankId, Account account);
     Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account);
 }
 
@@ -36,11 +39,15 @@ public class QuizBankService : IQuizBankService
 {
     private readonly DataContext _context;
     private readonly IMapper _mapper;
+    private readonly IGeminiAIService _geminiAiService;
 
-    public QuizBankService(DataContext context, IMapper mapper)
+
+    public QuizBankService(DataContext context, IMapper mapper, IGeminiAIService geminiAiService
+     )   
     {
         _context = context;
         _mapper = mapper;
+        _geminiAiService = geminiAiService;
     }
 
     public QuizBankResponse AddQuiz(Account account, QuizCreate model, int id)
@@ -58,7 +65,7 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public async Task<QuizBankResponse> CopyQuizBank(string newQuizBankName,int quizbankId, Account account)
+    public async Task<QuizBankResponse> CopyQuizBank(string newQuizBankName, int quizbankId, Account account)
     {
         var quizBank = GetQuizBank(quizbankId);
         var newName = newQuizBankName.Trim() != "" ? newQuizBankName : quizBank.BankName;
@@ -81,21 +88,42 @@ public class QuizBankService : IQuizBankService
             };
             newBank.Quizes.Add(_mapper.Map<Quiz>(newQuiz));
         }
+
         _context.QuizBanks.Add(newBank);
         await _context.SaveChangesAsync();
 
         return _mapper.Map<QuizBankResponse>(newBank);
     }
 
-    public QuizBankResponse Create(Account currentUser, QuizBankCreate model)
+    public async Task<QuizBankResponse> Create(Account currentUser, QuizBankCreate model)
     {
-        if (model.Visibility == null) model.Visibility = Visibility.Public;
+        model.Visibility ??= Visibility.Public;
 
         var quizBank = _mapper.Map<QuizBank>(model);
         quizBank.Created = DateTime.UtcNow;
         quizBank.Author = currentUser;
-        _context.QuizBanks.Add(quizBank);
-        _context.SaveChanges();
+        var name = quizBank.BankName.Trim().ToLower();
+        var description = quizBank.Description?.Trim().ToLower();
+        var tags = quizBank.Tags?.Select(t => t.Trim().ToLower()).ToList() ?? new List<string>();
+        var combined = name + ";" + description + ";" + string.Join(";", tags);
+        try
+        {
+            var embeddings = await _geminiAiService.GetEmbedding(combined);
+            quizBank.Embedding = new Vector(embeddings?.Embedding.Values ?? Array.Empty<float>());
+            foreach (var quiz in quizBank.Quizes)       
+            {
+                var quizCombined = quiz.Question + ";" + quiz.Answer;
+                var quizEmbeddings = await _geminiAiService.GetEmbedding(quizCombined);
+                quiz.Embedding = new Vector(quizEmbeddings?.Embedding.Values ?? Array.Empty<float>());     
+            }
+            _context.QuizBanks.Add(quizBank);
+            await _context.SaveChangesAsync();
+          
+        }
+        catch (Exception e)
+        {
+            throw new AppException("Could not create the quiz bank, " + e.Message);
+        }
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
@@ -128,8 +156,9 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
     {
-        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Include(q => q.Quizes).ToPagedAsync(options,
-            x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Include(q => q.Quizes)
+            .ToPagedAsync(options,
+                x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -146,10 +175,10 @@ public class QuizBankService : IQuizBankService
     public async Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account)
     {
         var quizBanks = await _context.QuizBanks.Include(c => c.Quizes)
-                                                .Include(c => c.Author)
-                                                .Where(q => q.Tags != null && q.Tags.Contains(tag))
-                                                .ToPagedAsync(options,
-            x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+            .Include(c => c.Author)
+            .Where(q => q.Tags != null && q.Tags.Contains(tag))
+            .ToPagedAsync(options,
+                x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -159,8 +188,9 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
     {
-        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
-            x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author)
+            .Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
+                x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -171,11 +201,14 @@ public class QuizBankService : IQuizBankService
     public async Task<ProgressResponse> GetProgress(int quizbankId, Account account)
     {
         GetQuizBank(quizbankId);
-        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        var progress =
+            await _context.LearnedProgress.FirstOrDefaultAsync(p =>
+                p.QuizBankId == quizbankId && p.AccountId == account.Id);
         if (progress == null)
         {
             throw new KeyNotFoundException("Not found progress");
         }
+
         return _mapper.Map<ProgressResponse>(progress);
     }
 
@@ -188,13 +221,18 @@ public class QuizBankService : IQuizBankService
                 .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
             return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
         }
+
         return new List<QuizBankResponse>();
     }
 
     public QuizBankResponse Rating(int id, Account account, int rating)
     {
         var quizBank = GetQuizBank(id);
-        if (quizBank.Rating == null) { quizBank.Rating = new List<Rating>(); }
+        if (quizBank.Rating == null)
+        {
+            quizBank.Rating = new List<Rating>();
+        }
+
         quizBank.Rating.RemoveAll(r => r.AccountId == account.Id);
         quizBank.Rating.Add(new Rating(account.Id, rating));
         _context.QuizBanks.Update(quizBank);
@@ -203,10 +241,13 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public async Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest)
+    public async Task<ProgressResponse> SaveProgress(int quizbankId, Account account,
+        SaveProgressRequest saveProgressRequest)
     {
         GetQuizBank(quizbankId);
-        var progress = await _context.LearnedProgress.FirstOrDefaultAsync(p => p.QuizBankId == quizbankId && p.AccountId == account.Id);
+        var progress =
+            await _context.LearnedProgress.FirstOrDefaultAsync(p =>
+                p.QuizBankId == quizbankId && p.AccountId == account.Id);
         if (progress == null)
         {
             progress = new LearnedProgress
@@ -227,9 +268,9 @@ public class QuizBankService : IQuizBankService
             progress.LearnMode = saveProgressRequest.LearnMode;
             _context.LearnedProgress.Update(progress);
         }
+
         await _context.SaveChangesAsync();
         return _mapper.Map<ProgressResponse>(progress);
-
     }
 
     public QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser)

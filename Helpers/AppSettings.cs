@@ -18,4 +18,5 @@ public class AppSettings
     public string TextOnlyUrl { get; set; }
     public string TextAndImageUrl { get; set; }
     public string GeminiAIApiKey { get; set; }
+    public string EmbeddingUrl { get; set; }
 }

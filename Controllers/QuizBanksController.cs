@@ -53,9 +53,9 @@ public class QuizBankController : BaseController
 
     [Authorize]
     [HttpPost]
-    public ActionResult<QuizBankResponse> Create(QuizBankCreate model)
+    public async Task<ActionResult<QuizBankResponse>> Create(QuizBankCreate model)
     {
-        var result = _quizBankService.Create(Account, model);
+        var result = await _quizBankService.Create(Account, model);
         return Ok(result);
     }
 
