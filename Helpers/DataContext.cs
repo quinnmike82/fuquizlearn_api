@@ -28,6 +28,7 @@ public class DataContext : DbContext
     public DbSet<GameQuiz> GameQuizs { get; set; }
     public DbSet<GameRecord> GameRecords { get; set; }
     public DbSet<AnswerHistory> AnswerHistories { get; set; }
+    public DbSet<Report> Reports { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)

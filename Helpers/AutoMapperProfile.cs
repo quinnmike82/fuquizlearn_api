@@ -8,6 +8,7 @@ using fuquizlearn_api.Models.Plan;
 using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
+using fuquizlearn_api.Models.Report;
 using SendGrid.Helpers.Mail;
 
 namespace fuquizlearn_api.Helpers
@@ -208,6 +209,26 @@ namespace fuquizlearn_api.Helpers
                 var commentResponse = mapper.Map<AccountResponse>(src.Account);
                 return commentResponse;
             }));
+            CreateMap<Report, ReportResponse>()
+           .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+           {
+               var mapper = context.Mapper;
+               var commentResponse = mapper.Map<AccountResponse>(src.Account);
+               return commentResponse;
+           }))
+           .ForMember(dest => dest.Owner, opt => opt.MapFrom((src, dest, destMember, context) =>
+           {
+               var mapper = context.Mapper;
+               var commentResponse = mapper.Map<AccountResponse>(src.Owner);
+               return commentResponse;
+           }))
+           .ForMember(dest => dest.QuizBank, opt => opt.MapFrom((src, dest, destMember, context) =>
+           {
+               var mapper = context.Mapper;
+               var commentResponse = mapper.Map<QuizBankResponse>(src.QuizBank);
+               return commentResponse;
+           }))
+           ;
         }
     }
 }

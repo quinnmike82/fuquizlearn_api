@@ -51,14 +51,15 @@ namespace fuquizlearn_api.Services
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
         private readonly IHelperFrontEnd _helperFrontEnd;
+        private readonly INotificationService _notificationService;
 
-
-        public ClassroomService(DataContext context, IMapper mapper, IHelperFrontEnd helperFrontEnd, IEmailService emailService)
+        public ClassroomService(DataContext context, IMapper mapper, IHelperFrontEnd helperFrontEnd, IEmailService emailService, INotificationService notificationService)
         {
             _context = context;
             _mapper = mapper;
             _helperFrontEnd = helperFrontEnd;
             _emailService = emailService;
+            _notificationService = notificationService;
         }
         public async Task AddMember(AddMember addMember, Account account)
         {
@@ -150,6 +151,7 @@ namespace fuquizlearn_api.Services
             {
                 await RemoveMember(memberId, id, account);
             }
+            await _notificationService.NotificationTrigger(new List<int> { memberId }, "Aleart", "ban_classroom", classroom.Classname);
 
         }
 
@@ -248,6 +250,7 @@ namespace fuquizlearn_api.Services
             _context.ClassroomsMembers.RemoveRange(classroomMembers);
             _context.Classrooms.Update(classroom);
             await _context.SaveChangesAsync();
+            await _notificationService.NotificationTrigger(memberIds, "Aleart", "kick_classroom", classroom.Classname);
         }
 
         public async Task CopyQuizBank(int quizbankId, int classroomId, string newName, Account account)
@@ -576,6 +579,7 @@ namespace fuquizlearn_api.Services
             }
             _context.ClassroomsMembers.Remove(classroomMember);
             await _context.SaveChangesAsync();
+            await _notificationService.NotificationTrigger(new List<int> { memberId }, "Aleart", "kick_classroom", classroom.Classname);
         }
 
         public async Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account)
@@ -627,7 +631,7 @@ namespace fuquizlearn_api.Services
                 classroom.ClassroomCodes.Add(classroomCode);
                 _context.Classrooms.Update(classroom);
                 await _context.SaveChangesAsync();
-
+                await _notificationService.NotificationTrigger(new List<int> { memberId }, "Notification", "invite_classroom", classroom.Classname);
                 await sendInvitationEmail(member, account, _helperFrontEnd.GetUrl($"/classrooms?code={code}"), classroom.Classname);
             }
         }

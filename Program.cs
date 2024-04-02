@@ -89,6 +89,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<INotificationService, NotificationService>();
     services.AddScoped<IPlanService, PlanService>();
     services.AddScoped<IGameService, GameService>();
+    services.AddScoped<IReportService, ReportService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
     services.AddHttpClient("GeminiAITextOnly", opt =>
     {

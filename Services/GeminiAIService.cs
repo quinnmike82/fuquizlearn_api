@@ -51,19 +51,19 @@ namespace fuquizlearn_api.Services
 
         public async Task<GeminiAiResponse> GetTextOnly(QuizCreate prompt, CancellationToken cancellationToken)
         {
-            string aiPrompt = prompt.Question + "\nAnwser is \n" + prompt.Answer + "\n Explain the question with max 60 words(refer to the question language)";
+            string aiPrompt = prompt.Question + "\nAnwser is \n" + prompt.Answer + "\n Explain the question with max 60 words(refer to the question language and provide the reference link if have)";
             return await GetAIResponse(aiPrompt, cancellationToken);
         }
 
         public async Task<GeminiAiResponse> CheckCorrectAnswer(QuizCreate prompt, CancellationToken cancellationToken)
         {
-            string aiPrompt = "Question and choices are: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language)";
+            string aiPrompt = "Question and choices are: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language and provide the reference link if have)";
             return await GetAIResponse(aiPrompt, cancellationToken);
         }
 
         public async Task<GeminiAiResponse> GetAnwser(QuizCreate prompt, CancellationToken cancellationToken)
         {
-            string aiPrompt = "Question is: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language)";
+            string aiPrompt = "Question is: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language and provide the reference link if have)";
             return await GetAIResponse(aiPrompt, cancellationToken);
         }
 

@@ -9,5 +9,7 @@ namespace fuquizlearn_api.Models.Notification
         public string Type { get; set; }
         public DateTime Created { get; set; }
         public DateTime? Read { get; set; }
+        public string ObjectName { get; set; }
+
     }
 }

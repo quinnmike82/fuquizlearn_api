@@ -36,11 +36,13 @@ namespace fuquizlearn_api.Services
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        private readonly INotificationService _notificationService;
 
-        public PostService(DataContext context, IMapper mapper)
+        public PostService(DataContext context, IMapper mapper, INotificationService notificationService)
         {
             _context = context;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<PostResponse> CreatePost(PostCreate post, Account account)
@@ -53,6 +55,7 @@ namespace fuquizlearn_api.Services
             newPost.Classroom  = classroom; 
             _context.Posts.Add(newPost);
             await _context.SaveChangesAsync();
+            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Information", "create_post", classroom.Classname);
             return _mapper.Map<PostResponse>(newPost);
         }
 
