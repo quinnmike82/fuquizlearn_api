@@ -41,6 +41,13 @@ namespace fuquizlearn_api.Controllers
                 return Ok(notifications);
         }
         [Authorize]
+        [HttpGet("GetAll")]
+        public async Task<IActionResult> GetAll([FromQuery] PagedRequest options)
+        {
+                var notifications = await _notificationService.GetAll(options);
+                return Ok(notifications);
+        }
+        [Authorize]
         [HttpGet("account/{accountId}")]
         public async Task<IActionResult> GetNotificationsByAccount(int accountId, [FromQuery] PagedRequest options)
         {
