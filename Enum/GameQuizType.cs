@@ -3,6 +3,7 @@
 public enum GameQuizType
 {
     MultipleChoice,
-    YesNo,
-    FillInBlank
+    TrueFalse,
+    ConstructedResponse,
+    Dnd
 }

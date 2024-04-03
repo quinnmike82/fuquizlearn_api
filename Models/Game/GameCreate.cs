@@ -1,4 +1,5 @@
 ﻿using fuquizlearn_api.Entities;
+using fuquizlearn_api.Enum;
 using System.ComponentModel.DataAnnotations;
 
 namespace fuquizlearn_api.Models.Classroom
@@ -18,5 +19,8 @@ namespace fuquizlearn_api.Models.Classroom
         [Required]
         public DateTime EndTime { get; set; }
         public int? Duration { get; set; }
+        [Required]
+        [MinLength(1)]
+        public GameQuizType[] QuizTypes{ get; set; }
     }
 }

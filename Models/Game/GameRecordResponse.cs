@@ -1,7 +1,4 @@
-﻿using fuquizlearn_api.Entities;
-using fuquizlearn_api.Models.Accounts;
-using fuquizlearn_api.Models.Quiz;
-using System.ComponentModel.DataAnnotations;
+﻿using fuquizlearn_api.Models.Accounts;
 
 namespace fuquizlearn_api.Models.Classroom
 {
@@ -12,7 +9,7 @@ namespace fuquizlearn_api.Models.Classroom
         public GameResponse Game { get; set; }
         public int AccountId { get; set; }
         public AccountResponse Account { get; set; }
-        public int TotalMark {  get; set; }
+        public int TotalMark { get; set; }
         public DateTime Created { get; set; }
         public DateTime? Updated { get; set; }
     }

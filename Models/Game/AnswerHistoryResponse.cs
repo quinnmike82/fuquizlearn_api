@@ -6,8 +6,8 @@ namespace fuquizlearn_api.Models.Classroom
 {
     public class AnswerHistoryResponse
     {
-        public QuizResponse Quiz { get; set; }
-        public string UserAnswer { get; set; }
+        public GameQuizResponse Quiz { get; set; }
+        public string[] UserAnswer { get; set; }
         public bool IsCorrect { get; set; }
     }
 }
