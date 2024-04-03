@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Web;
 using Hangfire;
+using Microsoft.EntityFrameworkCore.Internal;
+using Pgvector;
 using Pgvector.EntityFrameworkCore;
 
 namespace fuquizlearn_api.Services;
@@ -210,25 +212,10 @@ public class QuizBankService : IQuizBankService
 
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
-        var tags = GetQuizBank(id).Tags;
-        var embedding = GetQuizBank(id).Embedding;
-
-        var relatedQuizBanks = new List<QuizBank>();
-        if (embedding != null)
-        {
-            var relatedQuizBanksEmbedding = GetRelatedByEmbedding(id);
-            relatedQuizBanks.AddRange(relatedQuizBanksEmbedding);
-        }
-        else if (tags is { Count: > 0 })
-        {
-            var relatedQuizBanksTags = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
-                .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
-            relatedQuizBanks.AddRange(relatedQuizBanksTags);
-        }
-
+        var relatedQuizBanks = HybridRecommendation(id);
         return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
     }
-    
+
     private IEnumerable<QuizBank> GetRelatedByEmbedding(int id)
     {
         var embedding = GetQuizBank(id).Embedding;
@@ -239,6 +226,54 @@ public class QuizBankService : IQuizBankService
             .AsEnumerable()
             .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
             .Take(10).ToList();
+
+        return relatedQuizBanks;
+    }
+
+    /**
+     * Hybrid recommendation system
+     *
+     * @param id quizbank id
+     *
+     */
+    private IEnumerable<QuizBank> HybridRecommendation(int id, float tagWeight = 1, float sematicWeight = 1,
+        int rrFK = 50, int take = 10)
+    {
+        var tags = GetQuizBank(id).Tags ?? new List<string>();
+        var embedding = GetQuizBank(id).Embedding ?? new Vector(new float[768]);
+
+
+        var tagRelatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+            .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(take)
+            .Select(qb => new
+            {
+                QuizBank = qb,
+                Score = 1.0 / (rrFK + tags.IndexOf(qb.Tags!.First()))
+            })
+            .ToList();
+        var embeddingRelatedQuizBanks = _context.QuizBanks
+            .Where(qb => qb.Embedding != null && qb.Id != id).Include(quizBank => quizBank.Embedding!)
+            .AsEnumerable()
+            .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
+            .Take(take)
+            .Select(qb => new
+            {
+                QuizBank = qb,
+                Score = 1.0 / (rrFK + qb.Embedding!.CosineDistance(embedding))
+            }).ToList();
+
+        // Join two list and order by score 
+        var relatedQuizBanks = tagRelatedQuizBanks.Concat(embeddingRelatedQuizBanks).GroupBy(x => x.QuizBank)
+            .Select(x => new
+            {
+                QuizBank = x.Key,
+                Score = x.Sum(s => s.Score)
+            })
+            .OrderByDescending(x => x.Score)
+            .Select(x => x.QuizBank)
+            .Take(take)
+            .ToList();
+
 
         return relatedQuizBanks;
     }

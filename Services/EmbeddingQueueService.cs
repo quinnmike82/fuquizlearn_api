@@ -45,7 +45,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
 
             var quizbank = _quizBankService.GetById(quizBankId);
             var quizzes = _quizService.GetAll(quizBankId);
-            var quizbankEmbeddingReponse = await EmbedingQuizbank(quizbank, quizzes, _geminiAIService);
+            var quizbankEmbeddingReponse = await EmbeddingQuizbank(quizbank, quizzes, _geminiAIService);
 
             if (quizbankEmbeddingReponse != null)
             {
@@ -83,7 +83,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
         }
     }
 
-    private async Task<EmbedResponse?> EmbedingQuizbank(QuizBankResponse quizBank, IEnumerable<Quiz> quizzes,
+    private async Task<EmbedResponse?> EmbeddingQuizbank(QuizBankResponse quizBank, IEnumerable<Quiz> quizzes,
         IGeminiAIService _geminiAIService)
     {
         var content = quizBank.BankName + " ; " + quizBank.Description;
