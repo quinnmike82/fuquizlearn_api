@@ -9,11 +9,9 @@ using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
-using System.Threading.Channels;
 using System.Web;
 using Hangfire;
-using NpgsqlTypes;
-using Pgvector;
+using Pgvector.EntityFrameworkCore;
 
 namespace fuquizlearn_api.Services;
 
@@ -105,11 +103,11 @@ public class QuizBankService : IQuizBankService
         var quizBank = _mapper.Map<QuizBank>(model);
         quizBank.Created = DateTime.UtcNow;
         quizBank.Author = currentUser;
-        
+
         _context.QuizBanks.Add(quizBank);
         await _context.SaveChangesAsync();
 
-        BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id) ); // do embedding after 30s
+        BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id)); // do embedding after 30s
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
@@ -124,7 +122,7 @@ public class QuizBankService : IQuizBankService
         _context.QuizBanks.Update(quizBank);
         _context.SaveChanges();
 
-        return _mapper.Map<QuizBankResponse>(quizBank); 
+        return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
     public void Delete(int id, Account currentUser)
@@ -213,14 +211,36 @@ public class QuizBankService : IQuizBankService
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
         var tags = GetQuizBank(id).Tags;
-        if (tags != null && tags.Count > 0)
+        var embedding = GetQuizBank(id).Embedding;
+
+        var relatedQuizBanks = new List<QuizBank>();
+        if (embedding != null)
         {
-            var relatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+            var relatedQuizBanksEmbedding = GetRelatedByEmbedding(id);
+            relatedQuizBanks.AddRange(relatedQuizBanksEmbedding);
+        }
+        else if (tags is { Count: > 0 })
+        {
+            var relatedQuizBanksTags = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
                 .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(10).ToList();
-            return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
+            relatedQuizBanks.AddRange(relatedQuizBanksTags);
         }
 
-        return new List<QuizBankResponse>();
+        return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
+    }
+    
+    private IEnumerable<QuizBank> GetRelatedByEmbedding(int id)
+    {
+        var embedding = GetQuizBank(id).Embedding;
+        if (embedding == null) return new List<QuizBank>();
+
+        var relatedQuizBanks = _context.QuizBanks
+            .Where(qb => qb.Embedding != null && qb.Id != id).Include(quizBank => quizBank.Embedding!)
+            .AsEnumerable()
+            .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
+            .Take(10).ToList();
+
+        return relatedQuizBanks;
     }
 
     public QuizBankResponse Rating(int id, Account account, int rating)
