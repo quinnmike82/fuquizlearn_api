@@ -9,6 +9,7 @@ using fuquizlearn_api.Models.Posts;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.QuizBank;
 using fuquizlearn_api.Models.Report;
+using fuquizlearn_api.Models.Transaction;
 using SendGrid.Helpers.Mail;
 
 namespace fuquizlearn_api.Helpers
@@ -229,6 +230,14 @@ namespace fuquizlearn_api.Helpers
                return commentResponse;
            }))
            ;
+            CreateMap<TransactionCreate, Transaction>();
+            CreateMap<Transaction, TransactionResponse>()
+            .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Account);
+                return commentResponse;
+            }));
         }
     }
 }
