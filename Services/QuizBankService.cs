@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Threading.Channels;
 using System.Web;
+using Hangfire;
 using NpgsqlTypes;
 using Pgvector;
 
@@ -22,6 +23,7 @@ public interface IQuizBankService
     QuizBankResponse GetById(int id);
     Task<QuizBankResponse> Create(Account currentUser, QuizBankCreate model);
     QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser);
+    QuizBankResponse Update(int id, QuizBankUpdate model);
     void Delete(int id, Account currentUser);
     void DeleteQuiz(int id, int quizId, Account account);
     QuizBankResponse UpdateQuiz(int id, int quizId, QuizUpdate model, Account account);
@@ -40,10 +42,11 @@ public class QuizBankService : IQuizBankService
     private readonly DataContext _context;
     private readonly IMapper _mapper;
     private readonly IGeminiAIService _geminiAiService;
+    private readonly IQuizService _quizService;
 
 
     public QuizBankService(DataContext context, IMapper mapper, IGeminiAIService geminiAiService
-     )   
+    )
     {
         _context = context;
         _mapper = mapper;
@@ -102,32 +105,27 @@ public class QuizBankService : IQuizBankService
         var quizBank = _mapper.Map<QuizBank>(model);
         quizBank.Created = DateTime.UtcNow;
         quizBank.Author = currentUser;
-        var name = quizBank.BankName.Trim().ToLower();
-        var description = quizBank.Description?.Trim().ToLower();
-        var tags = quizBank.Tags?.Select(t => t.Trim().ToLower()).ToList() ?? new List<string>();
-        var combined = name + ";" + description + ";" + string.Join(";", tags);
-        try
-        {
-            var embeddings = await _geminiAiService.GetEmbedding(combined);
-            quizBank.Embedding = new Vector(embeddings?.Embedding.Values ?? Array.Empty<float>());
-            foreach (var quiz in quizBank.Quizes)       
-            {
-                var quizCombined = quiz.Question + ";" + quiz.Answer;
-                var quizEmbeddings = await _geminiAiService.GetEmbedding(quizCombined);
-                quiz.Embedding = new Vector(quizEmbeddings?.Embedding.Values ?? Array.Empty<float>());     
-            }
-            _context.QuizBanks.Add(quizBank);
-            await _context.SaveChangesAsync();
-          
-        }
-        catch (Exception e)
-        {
-            throw new AppException("Could not create the quiz bank, " + e.Message);
-        }
+        
+        _context.QuizBanks.Add(quizBank);
+        await _context.SaveChangesAsync();
+
+        BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id) ); // do embedding after 30s
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
+
+    public QuizBankResponse Update(int id, QuizBankUpdate model)
+    {
+        var quizBank = GetQuizBank(id);
+        _mapper.Map(model, quizBank);
+        quizBank.Updated = DateTime.UtcNow;
+
+        _context.QuizBanks.Update(quizBank);
+        _context.SaveChanges();
+
+        return _mapper.Map<QuizBankResponse>(quizBank); 
+    }
 
     public void Delete(int id, Account currentUser)
     {

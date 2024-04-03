@@ -13,6 +13,7 @@ namespace fuquizlearn_api.Services
 {
     public interface IQuizService
     {
+        List<Quiz> GetAll(int bankId); // this should not be used in user
         Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options);
         QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
         QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
@@ -31,6 +32,12 @@ namespace fuquizlearn_api.Services
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public List<Quiz> GetAll(int bankId)
+        {
+                var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId).ToList();
+                return quizes ?? throw new KeyNotFoundException("Could not find the quiz");
         }
 
         public QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId)

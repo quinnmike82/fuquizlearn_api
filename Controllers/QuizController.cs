@@ -84,34 +84,34 @@ namespace fuquizlearn_api.Controllers
             return Ok(result);
         }
 
-        // This is used for supabase hook
-        [HttpPost("webhook")]
-        public async Task<ActionResult> Webhook(WebhookPayload<Quiz> payload)
-        {
-            if (payload.type == WebHookType.DELETE)
-            {
-                return BadRequest("Delete is not supported");
-            }
-
-            var id = payload.record.Id;
-            var quiz = _quizService.GetQuizById(id);
-            if (quiz == null)
-            {
-                return BadRequest("Quiz not found");
-            }
-
-            var question = quiz.Question;
-            var answer = quiz.Answer;
-            var embedding = await _geminiAIService.GetEmbedding(question + ";" + answer);
-            
-            var updatedQuiz = new QuizUpdate
-            {
-                Embedding = new Vector(embedding.Embedding.Values)
-            };
-            
-           var result =  _quizService.UpdateQuiz(id, updatedQuiz);
-
-           return Ok(result);
-        }
+        // // This is used for supabase hook
+        // [HttpPost("webhook")]
+        // public async Task<ActionResult> Webhook(WebhookPayload<Quiz> payload)
+        // {
+        //     if (payload.type == WebHookType.DELETE)
+        //     {
+        //         return BadRequest("Delete is not supported");
+        //     }
+        //
+        //     var id = payload.record.Id;
+        //     var quiz = _quizService.GetQuizById(id);
+        //     if (quiz == null)
+        //     {
+        //         return BadRequest("Quiz not found");
+        //     }
+        //
+        //     var question = quiz.Question;
+        //     var answer = quiz.Answer;
+        //     var embedding = await _geminiAIService.GetEmbedding(question + ";" + answer);
+        //     
+        //     var updatedQuiz = new QuizUpdate
+        //     {
+        //         Embedding = new Vector(embedding.Embedding.Values)
+        //     };
+        //     
+        //    var result =  _quizService.UpdateQuiz(id, updatedQuiz);
+        //
+        //    return Ok(result);
+        // }
     }
 }

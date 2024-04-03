@@ -4,6 +4,8 @@ using fuquizlearn_api.Authorization;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Middleware;
 using fuquizlearn_api.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
@@ -65,6 +67,10 @@ var builder = WebApplication.CreateBuilder(args);
 
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+    services.AddHangfire(config =>
+        config.UsePostgreSqlStorage(c => c.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("Supabase")
+        )));
 
 
     var sendGridApiKey = builder.Configuration.GetValue<string>("AppSettings:SendGridApiKey");
@@ -92,6 +98,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IPlanService, PlanService>();
     services.AddScoped<IGameService, GameService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
+    services.AddTransient<IEmbeddingQueueService, EmbeddingQueueService>();
     services.AddHttpClient("GeminiAITextOnly", opt =>
     {
         opt.BaseAddress = new Uri($"{appSettings.TextOnlyUrl}");
@@ -130,6 +137,8 @@ using (var scope = app.Services.CreateScope())
         .AllowAnyHeader()
         .AllowCredentials());
 
+    app.UseHangfireDashboard(("/hangfire"));
+    app.UseHangfireServer();
     if (builder.Environment.IsDevelopment()) app.UseMiddleware<RequestLoggingMiddleware>();
     // global error handler
     app.UseMiddleware<ErrorHandlerMiddleware>();

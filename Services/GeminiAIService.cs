@@ -18,7 +18,7 @@ namespace fuquizlearn_api.Services
             CancellationToken cancellationToken = default);
         Task<GeminiAiResponse> CheckCorrectAnswer(QuizCreate prompt, CancellationToken cancellationToken = default);
         Task<GeminiAiResponse> GetAnwser(QuizCreate prompt, CancellationToken cancellationToken = default);
-        Task<EmbedResponse?> GetEmbedding(string text, CancellationToken cancellationToken = default);
+        Task<EmbedResponse?> GetEmbedding(IEnumerable<string> textStrings, CancellationToken cancellationToken = default);
     }
 
     public class GeminiService : IGeminiAIService
@@ -71,6 +71,28 @@ namespace fuquizlearn_api.Services
         {
             string aiPrompt = "Question is: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language)";
             return await GetAIResponse(aiPrompt, cancellationToken);
+        }
+
+        public async Task<EmbedResponse?> GetEmbedding(IEnumerable<string> textStrings, CancellationToken cancellationToken = default)
+        {
+            var request = new EmbedContentRequest
+            {
+                TaskType = TaskType.SEMANTIC_SIMILARITY,
+                Title = "Embedding",
+                Content = new Content()
+                {
+                    Parts = textStrings.Select(text => new Part
+                    {
+                        Text = text
+                    }).ToArray()
+                }
+            };
+            
+            var response = await _httpEmbeddingClient.PostAsJsonAsync($"?key={_appSettings.GeminiAIApiKey}", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var embedResponse = JsonConvert.DeserializeObject<EmbedResponse>(responseContent);
+            return embedResponse;
         }
 
         public async Task<EmbedResponse?> GetEmbedding(string text, CancellationToken cancellationToken = default)
