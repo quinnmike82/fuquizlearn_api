@@ -212,7 +212,7 @@ public class QuizBankService : IQuizBankService
 
     public IEnumerable<QuizBankResponse> GetRelated(int id)
     {
-        var relatedQuizBanks = HybridRecommendation(id);
+        var relatedQuizBanks = HybridRecommendation(id, 1, 2, 70, 4);
         return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
     }
 
@@ -245,24 +245,25 @@ public class QuizBankService : IQuizBankService
 
         var tagRelatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
             .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(take)
+            .Include(qb => qb.Author)
             .Select(qb => new
             {
                 QuizBank = qb,
-                Score = 1.0 / (rrFK + tags.IndexOf(qb.Tags!.First()))
+                Score = 1.0 / (rrFK + tags.IndexOf(qb.Tags!.First())) * tagWeight
             })
             .ToList();
         var embeddingRelatedQuizBanks = _context.QuizBanks
-            .Where(qb => qb.Embedding != null && qb.Id != id).Include(quizBank => quizBank.Embedding!)
-            .AsEnumerable()
+            .Where(qb => qb.Embedding != null && qb.Id != id)
             .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
+            .Include(qb => qb.Author)
             .Take(take)
             .Select(qb => new
             {
                 QuizBank = qb,
-                Score = 1.0 / (rrFK + qb.Embedding!.CosineDistance(embedding))
-            }).ToList();
-
-        // Join two list and order by score 
+                // score by distance
+                Score = 1.0 / (rrFK +( qb.Embedding != null ? qb.Embedding!.CosineDistance(embedding) : 1)) * sematicWeight
+            })
+            .ToList();
         var relatedQuizBanks = tagRelatedQuizBanks.Concat(embeddingRelatedQuizBanks).GroupBy(x => x.QuizBank)
             .Select(x => new
             {
@@ -273,7 +274,6 @@ public class QuizBankService : IQuizBankService
             .Select(x => x.QuizBank)
             .Take(take)
             .ToList();
-
 
         return relatedQuizBanks;
     }
@@ -351,8 +351,7 @@ public class QuizBankService : IQuizBankService
         quiz.Updated = DateTime.UtcNow;
         quizBank.Updated = DateTime.UtcNow;
         _context.SaveChanges();
-
-
+BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id)); 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
