@@ -164,7 +164,13 @@ namespace fuquizlearn_api.Helpers
             .ForMember(x => x.PostId, op => op.MapFrom(src => src.Post.Id));
 
             CreateMap<LearnedProgress, ProgressResponse>();
-            CreateMap<Notification, NotificationResponse>();
+            CreateMap<Notification, NotificationResponse>()
+            .ForMember(dest => dest.Account, opt => opt.MapFrom((src, dest, destMember, context) =>
+            {
+                var mapper = context.Mapper;
+                var commentResponse = mapper.Map<AccountResponse>(src.Account);
+                return commentResponse;
+            })); ;
             CreateMap<NotificationCreate, Notification>();
             CreateMap<NotificationUpdate, Notification>()
                 .ForAllMembers(x => x.Condition(
