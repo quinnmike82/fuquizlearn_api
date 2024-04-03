@@ -1,11 +1,11 @@
-﻿using fuquizlearn_api.Controllers;
-using fuquizlearn_api.Models.Request;
+﻿using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Models.Transaction;
+using fuquizlearn_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace fuquizlearn_api.Services
+namespace fuquizlearn_api.Controllers
 {
     [ApiController]
     public class TransactionController : BaseController
@@ -16,12 +16,12 @@ namespace fuquizlearn_api.Services
             _transactionService = transactionService;
         }
         [HttpGet]
-        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll([FromQuery] PagedRequest options) 
+        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll([FromQuery] PagedRequest options)
         {
             return await _transactionService.GetAllTransaction(options, Account);
         }
         [HttpGet("current")]
-        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAllCurrent([FromQuery] PagedRequest options) 
+        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAllCurrent([FromQuery] PagedRequest options)
         {
             return await _transactionService.GetCurrentTransaction(options, Account);
         }

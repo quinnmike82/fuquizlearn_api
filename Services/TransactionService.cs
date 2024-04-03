@@ -38,7 +38,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account)
         {
-            var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Account.Id == account.Id)
+            var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Account.Id == account.Id).OrderByDescending(c => c.Id)
                                                      .ToPagedAsync(options,
                 x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
