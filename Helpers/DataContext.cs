@@ -1,6 +1,7 @@
 ﻿using fuquizlearn_api.Entities;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Pgvector.EntityFrameworkCore;
 
 namespace fuquizlearn_api.Helpers;
 
@@ -34,7 +35,7 @@ public class DataContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         // connect to supabase database
-        options.UseNpgsql(Configuration.GetConnectionString("Supabase"));
+        options.UseNpgsql(Configuration.GetConnectionString("Supabase"), o => o.UseVector());
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -54,5 +55,6 @@ public class DataContext : DbContext
             .HasForeignKey(q => q.PostId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.HasPostgresExtension("vector");
     }
 }

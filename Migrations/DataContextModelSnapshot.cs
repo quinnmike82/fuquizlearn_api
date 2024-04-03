@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 using fuquizlearn_api.Helpers;
 
 #nullable disable
@@ -21,6 +22,7 @@ namespace fuquizlearn_api.Migrations
                 .HasAnnotation("ProductVersion", "7.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Account", b =>
@@ -572,6 +574,9 @@ namespace fuquizlearn_api.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(768)");
+
                     b.Property<string>("Explaination")
                         .HasColumnType("text");
 
@@ -612,6 +617,9 @@ namespace fuquizlearn_api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(768)");
 
                     b.Property<string>("Rating")
                         .HasColumnType("jsonb");

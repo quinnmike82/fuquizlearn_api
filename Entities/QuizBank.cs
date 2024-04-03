@@ -1,5 +1,7 @@
 ﻿using fuquizlearn_api.Enum;
-using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
+using NpgsqlTypes;
+using Pgvector;
 
 namespace fuquizlearn_api.Entities;
 
@@ -16,6 +18,9 @@ public class QuizBank
     public List<string>? Tags { get; set; }
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime? Updated { get; set; }
+   
+    [Column(TypeName = "vector(768)")]   
+    public Vector? Embedding { get; set; }
 }
 
 public class Rating
