@@ -16,7 +16,7 @@ namespace fuquizlearn_api.Services
     {
         Task<TransactionResponse> CreateTransaction(TransactionCreate transactionCreate, Account account);
         Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account);
-        Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account);
+        Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options,int month, Account account);
     }
     public class TransactionService : ITransactionService
     {
@@ -36,9 +36,9 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<TransactionResponse>(trans);
         }
 
-        public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account)
+        public async Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account)
         {
-            var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Account.Id == account.Id).OrderByDescending(c => c.Id)
+            var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Account.Id == account.Id)
                                                      .ToPagedAsync(options,
                 x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
@@ -49,11 +49,11 @@ namespace fuquizlearn_api.Services
             };
         }
 
-        public async Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account)
+        public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, int month, Account account)
         {
             if(account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            var trans = await _context.Transactions.Include(c => c.Account)
+            var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Created.Month.Equals(month)).OrderByDescending(c => c.Id)
                                                      .ToPagedAsync(options,
                 x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 

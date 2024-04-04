@@ -15,10 +15,10 @@ namespace fuquizlearn_api.Controllers
         {
             _transactionService = transactionService;
         }
-        [HttpGet]
-        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll([FromQuery] PagedRequest options)
+        [HttpGet("{month:int}")]
+        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll(int month, [FromQuery] PagedRequest options)
         {
-            return await _transactionService.GetAllTransaction(options, Account);
+            return await _transactionService.GetAllTransaction(options, month, Account);
         }
         [HttpGet("current")]
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAllCurrent([FromQuery] PagedRequest options)

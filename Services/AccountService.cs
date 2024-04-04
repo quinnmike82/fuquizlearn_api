@@ -61,6 +61,7 @@ public class AccountService : IAccountService
     private readonly IHelperFrontEnd _helperFrontEnd;
     private readonly IJwtUtils _jwtUtils;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
 
     public AccountService(
         DataContext context,
@@ -72,7 +73,8 @@ public class AccountService : IAccountService
         IHelperEncryptService helperEncryptService,
         IHelperCryptoService helperCryptoService,
         IHelperFrontEnd helperFrontEnd,
-        IGoogleService googleService)
+        IGoogleService googleService,
+        INotificationService notificationService)
     {
         _context = context;
         _jwtUtils = jwtUtils;
@@ -84,6 +86,7 @@ public class AccountService : IAccountService
         _helperFrontEnd = helperFrontEnd;
         _googleService = googleService;
         _helperCryptoService = helperCryptoService;
+        _notificationService = notificationService;
     }
 
     public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
@@ -388,7 +391,7 @@ public class AccountService : IAccountService
         account.isWarning = DateTime.UtcNow;
         _context.Accounts.Update(account);
         _context.SaveChanges();
-
+        _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
         // Send the warning email
         SendWarningEmail(account, origin);
     }
