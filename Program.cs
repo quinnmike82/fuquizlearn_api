@@ -1,8 +1,13 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 using fuquizlearn_api.Authorization;
+using fuquizlearn_api.GameSocket;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Middleware;
 using fuquizlearn_api.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Microsoft.AspNet.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
@@ -67,6 +72,11 @@ var builder = WebApplication.CreateBuilder(args);
 
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+    services.AddHangfire(config =>
+        config.UsePostgreSqlStorage(c => c.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("Supabase")
+        )));
+
 
     var sendGridApiKey = builder.Configuration.GetValue<string>("AppSettings:SendGridApiKey");
     if (sendGridApiKey == null) throw new AppException("No SendGrid api key provided !");
@@ -95,6 +105,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IReportService, ReportService>();
     services.AddScoped<ITransactionService, TransactionService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
+    services.AddTransient<IEmbeddingQueueService, EmbeddingQueueService>();
     services.AddHttpClient("GeminiAITextOnly", opt =>
     {
         opt.BaseAddress = new Uri($"{appSettings.TextOnlyUrl}");
@@ -102,6 +113,16 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddHttpClient("GeminiAITextAndImage", opt =>
     {
         opt.BaseAddress = new Uri($"{appSettings.TextAndImageUrl}");
+    });
+    
+    services.AddHttpClient("Gemini Embedding", opt =>
+    {
+        opt.BaseAddress = new Uri($"{appSettings.EmbeddingUrl}");
+    });
+    
+    services.AddSignalR(hubOptions =>
+    {
+        hubOptions.EnableDetailedErrors = true;
     });
 }
 
@@ -128,6 +149,8 @@ using (var scope = app.Services.CreateScope())
         .AllowAnyHeader()
         .AllowCredentials());
 
+    app.UseHangfireDashboard(("/hangfire"));
+    app.UseHangfireServer();
     if (builder.Environment.IsDevelopment()) app.UseMiddleware<RequestLoggingMiddleware>();
     // global error handler
     app.UseMiddleware<ErrorHandlerMiddleware>();
@@ -136,6 +159,7 @@ using (var scope = app.Services.CreateScope())
     app.UsePathBase(prefix);
 
     app.MapControllers();
+    app.MapHub<GameSocket>("/GameSocket");
 }
 
 app.Run();

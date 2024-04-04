@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -13,9 +14,11 @@ using fuquizlearn_api.Helpers;
 namespace fuquizlearn_api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20240403201142_UpdateGame3")]
+    partial class UpdateGame3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -682,42 +685,6 @@ namespace fuquizlearn_api.Migrations
                     b.ToTable("Reports");
                 });
 
-            modelBuilder.Entity("fuquizlearn_api.Entities.Transaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AccountId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TransactionId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TransactionType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
-
-                    b.ToTable("Transactions");
-                });
-
             modelBuilder.Entity("fuquizlearn_api.Entities.Account", b =>
                 {
                     b.OwnsMany("fuquizlearn_api.Entities.RefreshToken", "RefreshTokens", b1 =>
@@ -983,17 +950,6 @@ namespace fuquizlearn_api.Migrations
                     b.Navigation("Owner");
 
                     b.Navigation("QuizBank");
-                });
-
-            modelBuilder.Entity("fuquizlearn_api.Entities.Transaction", b =>
-                {
-                    b.HasOne("fuquizlearn_api.Entities.Account", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Classroom", b =>

@@ -27,8 +27,9 @@ namespace fuquizlearn_api.Entities
         public int Id { get; set; }
         public int GameId { get; set; }
         public Game Game { get; set; }
-        public int QuizId { get; set; }
-        public Quiz Quiz { get; set; }
+        public List<string> Questions { get; set; }
+        public List<string> Answers { get; set; }
+        public List<string> CorrectAnswers { get; set; }
         public GameQuizType Type { get; set; }
     }
 }

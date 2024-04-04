@@ -1,9 +1,12 @@
 using fuquizlearn_api.Helpers;
+using fuquizlearn_api.Models.Gemeni;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Newtonsoft.Json;
 using AIRequest = fuquizlearn_api.Models.Request;
+using Content = fuquizlearn_api.Models.Gemeni.Content;
+using Part = fuquizlearn_api.Models.Gemeni.Part;
 
 namespace fuquizlearn_api.Services
 {
@@ -15,6 +18,7 @@ namespace fuquizlearn_api.Services
             CancellationToken cancellationToken = default);
         Task<GeminiAiResponse> CheckCorrectAnswer(QuizCreate prompt, CancellationToken cancellationToken = default);
         Task<GeminiAiResponse> GetAnwser(QuizCreate prompt, CancellationToken cancellationToken = default);
+        Task<EmbedResponse?> GetEmbedding(IEnumerable<string> textStrings, CancellationToken cancellationToken = default);
     }
 
     public class GeminiService : IGeminiAIService
@@ -22,12 +26,14 @@ namespace fuquizlearn_api.Services
         private readonly AppSettings _appSettings;
         private readonly HttpClient _httpTextOnlyClient;
         private readonly HttpClient _httpTextAndImageClient;
+        private readonly HttpClient _httpEmbeddingClient;   
 
         public GeminiService(AppSettings appSettings, IHttpClientFactory httpClientFactory)
         {
             _appSettings = appSettings;
             _httpTextOnlyClient = httpClientFactory.CreateClient("GeminiAITextOnly");
             _httpTextAndImageClient = httpClientFactory.CreateClient("GeminiAITextAndImage");
+            _httpEmbeddingClient = httpClientFactory.CreateClient("Gemini Embedding");
         }
 
         public async Task<GeminiAiResponse> GetTextAndImage(Stream file, string prompt,
@@ -65,6 +71,54 @@ namespace fuquizlearn_api.Services
         {
             string aiPrompt = "Question is: \n" + prompt.Question + "\nWhat is the right anwser? no need to explain, just the answer(refer to the question language and provide the reference link if have)";
             return await GetAIResponse(aiPrompt, cancellationToken);
+        }
+
+        public async Task<EmbedResponse?> GetEmbedding(IEnumerable<string> textStrings, CancellationToken cancellationToken = default)
+        {
+            var request = new EmbedContentRequest
+            {
+                TaskType = TaskType.SEMANTIC_SIMILARITY,
+                Title = "Embedding",
+                Content = new Content()
+                {
+                    Parts = textStrings.Select(text => new Part
+                    {
+                        Text = text
+                    }).ToArray()
+                }
+            };
+            
+            var response = await _httpEmbeddingClient.PostAsJsonAsync($"?key={_appSettings.GeminiAIApiKey}", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var embedResponse = JsonConvert.DeserializeObject<EmbedResponse>(responseContent);
+            return embedResponse;
+        }
+
+        public async Task<EmbedResponse?> GetEmbedding(string text, CancellationToken cancellationToken = default)
+        {
+            var request = new EmbedContentRequest
+            {
+                TaskType = TaskType.SEMANTIC_SIMILARITY,
+                Title = "Embedding",
+                Content = new Content()
+                {
+                    Parts = new[]
+                    {
+                        new Part()
+                        {
+                            Text = text
+                        }
+                    }
+                }
+            };
+
+            var response = await _httpEmbeddingClient.PostAsJsonAsync($"?key={ _appSettings.GeminiAIApiKey}", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null; 
+            
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var embedResponse = JsonConvert.DeserializeObject<EmbedResponse>(responseContent);
+            return embedResponse;
         }
 
         public async Task<GeminiAiResponse> GetAIResponse(string prompt, CancellationToken cancellationToken)
