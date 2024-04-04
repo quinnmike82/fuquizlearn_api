@@ -99,13 +99,14 @@ namespace fuquizlearn_api.Controllers
         [HttpGet("success")]
         // Automatic query parameter handling from ASP.NET.
         // Example URL: https://localhost:7051/checkout/success?sessionId=si_123123123123
-        public ActionResult CheckoutSuccess(string sessionId)
+        public async Task<ActionResult> CheckoutSuccess(string sessionId)
         {
             var sessionService = new SessionService();
             var session = sessionService.Get(sessionId);
 
             // Here you can save order and customer details to your database.
-
+            if (session.CustomerDetails?.Email == null)
+                return BadRequest();
             var total = session.AmountTotal.Value;
             var customerEmail = session.CustomerDetails.Email;
             var trans = new TransactionCreate
@@ -116,9 +117,9 @@ namespace fuquizlearn_api.Controllers
                 TransactionType = session.PaymentMethodCollection,
             };
 
-            _transactionService.CreateTransaction(trans, Account);
+            await _transactionService.CreateTransaction(trans, Account);
 
-            return Redirect(_frontEnd.GetBaseUrl() + "/success");
+            return Ok();
         }
     }
 }
