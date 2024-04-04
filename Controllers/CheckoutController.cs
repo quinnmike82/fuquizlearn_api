@@ -40,7 +40,7 @@ namespace fuquizlearn_api.Controllers
             if (thisApiUrl is not null)
             {
                 var sessionId = await CheckOut(product, thisApiUrl);
-                var pubKey = _configuration["AppSettings:StripeKey:PubicKey"];
+                var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
 
                 var checkoutOrderResponse = new CheckoutOrderResponse()
                 {
@@ -64,7 +64,7 @@ namespace fuquizlearn_api.Controllers
             var options = new SessionCreateOptions
             {
                 // Stripe calls the URLs below when certain checkout events happen such as success and failure.
-                SuccessUrl = $"{thisApiUrl}/checkout/success?sessionId=" + "{CHECKOUT_SESSION_ID}", // Customer paid.
+                SuccessUrl = $"{_frontEnd.GetBaseUrl()}/checkout/success?sessionId=" + "{CHECKOUT_SESSION_ID}", // Customer paid.
                 CancelUrl = _frontEnd.GetBaseUrl() + "/failed",  // Checkout cancelled.
                 PaymentMethodTypes = new List<string> // Only card available in test mode?
             {
