@@ -100,10 +100,10 @@ namespace fuquizlearn_api.Controllers
 
         [SwaggerOperation("Submit 1 quiz answer of current user in the game")]
         [Authorize]
-        [HttpPost("add-answer-history/{gameId}")]
-        public async Task<ActionResult<GameRecordResponse>> AddAnswerHistory(int gameId,[FromBody] AnswerHistoryRequest answerHistoryRequest)
+        [HttpPost("add-answer-history/")]
+        public async Task<ActionResult<GameRecordResponse>> AddAnswerHistory([FromBody] AnswerHistoryRequest answerHistoryRequest)
         {
-            var result = await _gameService.AddAnswerHistory(gameId, answerHistoryRequest, Account);
+            var result = await _gameService.AddAnswerHistory(answerHistoryRequest, Account);
             return Ok(result);
         }
 

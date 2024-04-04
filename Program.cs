@@ -1,11 +1,13 @@
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 using fuquizlearn_api.Authorization;
+using fuquizlearn_api.GameSocket;
 using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Middleware;
 using fuquizlearn_api.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNet.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
@@ -113,6 +115,11 @@ var builder = WebApplication.CreateBuilder(args);
     {
         opt.BaseAddress = new Uri($"{appSettings.EmbeddingUrl}");
     });
+    
+    services.AddSignalR(hubOptions =>
+    {
+        hubOptions.EnableDetailedErrors = true;
+    });
 }
 
 var app = builder.Build();
@@ -148,6 +155,7 @@ using (var scope = app.Services.CreateScope())
     app.UsePathBase(prefix);
 
     app.MapControllers();
+    app.MapHub<GameSocket>("/GameSocket");
 }
 
 app.Run();
