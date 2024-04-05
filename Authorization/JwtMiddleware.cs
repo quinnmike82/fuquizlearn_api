@@ -16,8 +16,8 @@ namespace fuquizlearn_api.Authorization
 
         public async Task Invoke(HttpContext context, DataContext dataContext, IJwtUtils jwtUtils)
         {
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-            var accountId = jwtUtils.ValidateJwtToken(token);
+            var token = ExtractToken(context);
+            var accountId = jwtUtils.ValidateJwtToken(token ?? "");
             if (accountId != null)
             {
                 // attach account to context on successful jwt validation
@@ -25,6 +25,22 @@ namespace fuquizlearn_api.Authorization
             }
 
             await _next(context);
+        }
+
+        private string? ExtractToken(HttpContext context)
+        {
+            string? token = null;
+            var authorization = context.Request.Headers["Authorization"].FirstOrDefault() ?? context.Request.Headers["x-token"].FirstOrDefault();
+            if (authorization != null)
+            {
+                token = authorization.Split(" ").Last();
+            }
+            else
+            {
+                token = context.Request.Query["access_token"];
+            } 
+            
+            return token;
         }
     }
 }
