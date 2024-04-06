@@ -23,7 +23,7 @@ namespace fuquizlearn_api.Models.Classroom
     {
         public int Id { get; set; }
         public int GameId { get; set; }
-        public Game Game { get; set; }
+        public GameResponse Game { get; set; }
         public List<string> Questions { get; set; }
         public List<string> Answers { get; set; }
         public GameQuizType Type { get; set; }
