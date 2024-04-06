@@ -39,12 +39,12 @@ public class EmailService : IEmailService
         try
         {
             var response = await _sendGridClient.SendEmailAsync(msg).ConfigureAwait(false);
-            _logger.Log(LogLevel.Information, "[EMAIL SERVICE] Send email successfully:\nBody:{body}", response.Body);
+            //_logger.Log(LogLevel.Information, "[EMAIL SERVICE] Send email successfully:\nBody:{body}", response.Body);
         }
         catch (Exception ex)
         {
             // Log or handle the exception
-            _logger.Log(LogLevel.Error, "[EMAIL SERVICE] Error sending email: {message}", ex.Message);
+            //_logger.Log(LogLevel.Error, "[EMAIL SERVICE] Error sending email: {message}", ex.Message);
             throw; // Rethrow the exception if needed
         }
     }

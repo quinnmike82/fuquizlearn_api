@@ -1,5 +1,6 @@
 ﻿using fuquizlearn_api.Helpers;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace fuquizlearn_api.Authorization
 {
@@ -21,7 +22,17 @@ namespace fuquizlearn_api.Authorization
             if (accountId != null)
             {
                 // attach account to context on successful jwt validation
-                context.Items["Account"] = await dataContext.Accounts.FindAsync(accountId.Value);
+                var account = await dataContext.Accounts.FindAsync(accountId.Value);
+                context.Items["Account"] = account;
+                if (context.Request.Path.Value.Contains("gameSocket"))
+                {
+                    context.User = new ClaimsPrincipal(
+                        new ClaimsIdentity( new[] 
+                        {
+                            new Claim("email", account.Email)
+                        }
+                        ));
+                }
             }
 
             await _next(context);
