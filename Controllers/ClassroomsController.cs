@@ -97,7 +97,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> DeleteClassroom(int id)
         {
             await _classroomService.DeleteClassroom(id, Account);
-            return Ok("Delete classroom successfully");
+            return Ok( new { message= "Delete classroom successfully" });
         }
 
         [HttpPost("generatecode/{classroomId}")]
