@@ -311,7 +311,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException("Could not find Classroom");
             }
-            if (!(classRoom.Account.Id == account.Id && account.Role != Role.Admin))
+            if (classRoom.Account.Id != account.Id && account.Role != Role.Admin)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
