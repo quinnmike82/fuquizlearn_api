@@ -33,11 +33,13 @@ namespace fuquizlearn_api.Services
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        private readonly INotificationService _notificationService;
 
-        public GameService(DataContext context, IMapper mapper)
+        public GameService(DataContext context, IMapper mapper, INotificationService notificationService)
         {
             _context = context;
             _mapper = mapper;
+            _notificationService = notificationService;
         }
 
         public async Task<AnswerHistoryResponse> AddAnswerHistory(AnswerHistoryRequest answerHistoryRequest, Account account)
@@ -98,13 +100,13 @@ namespace fuquizlearn_api.Services
 
         public async Task<GameResponse> CreateGame(GameCreate gameCreate, Account account)
         {
-
+            var classroom = new Classroom();
             var quizBank = await _context.QuizBanks.Include(qb => qb.Quizes).FirstOrDefaultAsync(qb => qb.Id == gameCreate.QuizBankId);
             if (quizBank == null) throw new KeyNotFoundException($"Can not found quizbank with id: {gameCreate.QuizBankId}");
 
             if (gameCreate.ClassroomId != null)
             {
-                var classroom = await _context.Classrooms.FindAsync(gameCreate.ClassroomId);
+                classroom = await _context.Classrooms.FindAsync(gameCreate.ClassroomId);
                 if (classroom == null)
                 {
                     throw new KeyNotFoundException($"Can not found classroom with id: {gameCreate.ClassroomId}");
@@ -142,6 +144,7 @@ namespace fuquizlearn_api.Services
             game.GameQuizs = GetRandomQuizFormQuizbank(quizBank, gameCreate.Amount, game.Id, gameCreate.QuizTypes);
             _context.Games.Update(game);
             await _context.SaveChangesAsync();
+            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Informnation", "create_game", classroom.Classname);
             return _mapper.Map<GameResponse>(game);
         }
 

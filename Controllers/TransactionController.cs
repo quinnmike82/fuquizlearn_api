@@ -1,4 +1,5 @@
-﻿using fuquizlearn_api.Models.Request;
+﻿using fuquizlearn_api.Entities;
+using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using fuquizlearn_api.Models.Transaction;
 using fuquizlearn_api.Services;
@@ -19,6 +20,10 @@ namespace fuquizlearn_api.Controllers
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll(int month, [FromQuery] PagedRequest options)
         {
             return await _transactionService.GetAllTransaction(options, month, Account);
+        }
+        [HttpGet("{month:int}/{year:int}")]
+        public async Task<ActionResult<ChartTransaction>> GetChart(int month, int year) { 
+            return await _transactionService.GetByMonth(month, year, Account);
         }
         [HttpGet("current")]
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAllCurrent([FromQuery] PagedRequest options)

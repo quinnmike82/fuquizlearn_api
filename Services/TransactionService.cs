@@ -17,6 +17,7 @@ namespace fuquizlearn_api.Services
         Task<TransactionResponse> CreateTransaction(TransactionCreate transactionCreate, Account account);
         Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account);
         Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options,int month, Account account);
+        Task<ChartTransaction> GetByMonth(int month, int year, Account account);
     }
     public class TransactionService : ITransactionService
     {
@@ -32,6 +33,25 @@ namespace fuquizlearn_api.Services
             var trans = _mapper.Map<Transaction>(transactionCreate);
             trans.Account = account;
             _context.Transactions.Add(trans);
+            await _context.SaveChangesAsync();
+            var month = trans.Created.Month;
+            var year = trans.Created.Year;
+            var chart = await _context.ChartTransactions.FirstOrDefaultAsync(c => c.Month == month && c.Year == year);
+            if(chart == null)
+            {
+                chart = new ChartTransaction
+                {
+                    Amount = trans.Amount,
+                    Month = month,
+                    Year = year
+                };
+                _context.ChartTransactions.Add(chart);
+            }
+            else
+            {
+                chart.Amount = chart.Amount + trans.Amount;
+                _context.Update(chart);
+            }
             await _context.SaveChangesAsync();
             return _mapper.Map<TransactionResponse>(trans);
         }
@@ -62,6 +82,13 @@ namespace fuquizlearn_api.Services
                 Data = _mapper.Map<IEnumerable<TransactionResponse>>(trans.Data),
                 Metadata = trans.Metadata
             };
+        }
+
+        public async Task<ChartTransaction> GetByMonth(int month, int year, Account account)
+        {
+            if (account.Role != Role.Admin)
+                throw new UnauthorizedAccessException("Not Admin");
+            return await _context.ChartTransactions.FirstOrDefaultAsync(c => c.Month == month && c.Year == year);
         }
     }
 }

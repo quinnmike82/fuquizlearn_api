@@ -31,6 +31,7 @@ public class DataContext : DbContext
     public DbSet<AnswerHistory> AnswerHistories { get; set; }
     public DbSet<Report> Reports { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
+    public DbSet<ChartTransaction> ChartTransactions { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
