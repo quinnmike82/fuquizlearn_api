@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Pgvector;
 using fuquizlearn_api.Helpers;
 
 #nullable disable
@@ -13,16 +13,17 @@ using fuquizlearn_api.Helpers;
 namespace fuquizlearn_api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20240403151039_checkout")]
+    partial class checkout
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "7.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Account", b =>
@@ -104,24 +105,24 @@ namespace fuquizlearn_api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("GameQuizId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("GameRecordId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsCorrect")
                         .HasColumnType("boolean");
 
-                    b.Property<string[]>("UserAnswer")
+                    b.Property<int>("QuizId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserAnswer")
                         .IsRequired()
-                        .HasColumnType("text[]");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameQuizId");
-
                     b.HasIndex("GameRecordId");
+
+                    b.HasIndex("QuizId");
 
                     b.ToTable("AnswerHistories");
                 });
@@ -319,20 +320,11 @@ namespace fuquizlearn_api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<List<string>>("Answers")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
-                    b.Property<List<string>>("CorrectAnswers")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
                     b.Property<int>("GameId")
                         .HasColumnType("integer");
 
-                    b.Property<List<string>>("Questions")
-                        .IsRequired()
-                        .HasColumnType("text[]");
+                    b.Property<int>("QuizId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -340,6 +332,8 @@ namespace fuquizlearn_api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GameId");
+
+                    b.HasIndex("QuizId");
 
                     b.ToTable("GameQuizs");
                 });
@@ -581,9 +575,6 @@ namespace fuquizlearn_api.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(768)");
-
                     b.Property<string>("Explaination")
                         .HasColumnType("text");
 
@@ -624,9 +615,6 @@ namespace fuquizlearn_api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
-
-                    b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(768)");
 
                     b.Property<string>("Rating")
                         .HasColumnType("jsonb");
@@ -773,21 +761,21 @@ namespace fuquizlearn_api.Migrations
 
             modelBuilder.Entity("fuquizlearn_api.Entities.AnswerHistory", b =>
                 {
-                    b.HasOne("fuquizlearn_api.Entities.GameQuiz", "GameQuiz")
-                        .WithMany()
-                        .HasForeignKey("GameQuizId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("fuquizlearn_api.Entities.GameRecord", "GameRecord")
                         .WithMany("AnswerHistories")
                         .HasForeignKey("GameRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("GameQuiz");
+                    b.HasOne("fuquizlearn_api.Entities.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("GameRecord");
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.Classroom", b =>
@@ -872,7 +860,15 @@ namespace fuquizlearn_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("fuquizlearn_api.Entities.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Game");
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("fuquizlearn_api.Entities.GameRecord", b =>

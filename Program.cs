@@ -11,6 +11,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SendGrid.Extensions.DependencyInjection;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
     var services = builder.Services;
     var appSettings = Config(builder.Services, builder.Configuration);
     var env = builder.Environment;
+
+    StripeConfiguration.ApiKey = builder.Configuration.GetValue<string>("AppSettings:StripeKey:SecretKey");
 
     services.AddDbContext<DataContext>();
     services.AddCors();
@@ -80,7 +83,7 @@ var builder = WebApplication.CreateBuilder(args);
 
     var geminiAIApiKey = builder.Configuration.GetValue<string>("AppSettings:GeminiAIApiKey");
     if (geminiAIApiKey == null) throw new AppException(("No GeminiAI api key provided!"));
-    
+
     // configure DI for application services
     services.AddScoped<IJwtUtils, JwtUtils>();
     services.AddScoped<IHelperEncryptService, HelperEncryptService>();
@@ -88,7 +91,7 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IHelperCryptoService, HelperCryptoService>();
     services.AddScoped<IHelperFrontEnd, HelperFrontEnd>();
     services.AddScoped<IGoogleService, GoogleService>();
-    services.AddScoped<IAccountService, AccountService>();
+    services.AddScoped<IAccountService, fuquizlearn_api.Services.AccountService>();
     services.AddScoped<IEmailService, EmailService>();
     services.AddScoped<IQuizBankService, QuizBankService>();
     services.AddScoped<IQuizService, QuizService>();
@@ -97,9 +100,10 @@ var builder = WebApplication.CreateBuilder(args);
     services.AddScoped<IPostService, PostService>();
     services.AddScoped<ISearchTextService, SearchTextService>();
     services.AddScoped<INotificationService, NotificationService>();
-    services.AddScoped<IPlanService, PlanService>();
+    services.AddScoped<IPlanService, fuquizlearn_api.Services.PlanService>();
     services.AddScoped<IGameService, GameService>();
     services.AddScoped<IReportService, ReportService>();
+    services.AddScoped<ITransactionService, TransactionService>();
     services.AddSendGrid(options => { options.ApiKey = sendGridApiKey; });
     services.AddTransient<IEmbeddingQueueService, EmbeddingQueueService>();
     services.AddHttpClient("GeminiAITextOnly", opt =>
