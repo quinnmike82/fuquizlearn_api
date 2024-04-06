@@ -13,11 +13,13 @@ namespace fuquizlearn_api.Controllers
         private readonly IConfiguration _configuration;
         private readonly IHelperFrontEnd _frontEnd;
         private readonly ITransactionService _transactionService;
-        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService)
+        private readonly IPlanService _planService;
+        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService, IPlanService planService)
         {
             _configuration = configuration;
             _frontEnd = frontEnd;
             _transactionService = transactionService;
+            _planService = planService;
         }
 
         [HttpPost]
@@ -78,6 +80,7 @@ namespace fuquizlearn_api.Controllers
                     {
                         UnitAmount = product.Amount, // Price is in USD cents.
                         Currency = "USD",
+                        Product = product.Id.ToString(),
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = product.Title,
@@ -118,6 +121,7 @@ namespace fuquizlearn_api.Controllers
             };
 
             await _transactionService.CreateTransaction(trans, Account);
+            await _planService.RegisterPlan(int.Parse(session.LineItems.Data[0].Id), Account);
 
             return Ok();
         }
