@@ -318,7 +318,6 @@ namespace fuquizlearn_api.Services
             classRoom.DeletedAt = DateTime.UtcNow;
             _context.Classrooms.Update(classRoom);
             await _context.SaveChangesAsync();
-            await _notificationService.NotificationTrigger(classRoom.AccountIds.ToList(), "Information", "delete_classroom", classRoom.Classname);
         }
 
         public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)   
