@@ -23,6 +23,7 @@ namespace fuquizlearn_api.Services
         Task RemovePlan(int id, Account account);
         Task<PagedResponse<PlanResponse>> GetAllPlan(PagedRequest options);
         Task<PlanAccount> RegisterPlan(int id,Account account);
+        Task<bool> CheckAICount(Account account);
     }
     public class PlanService : IPlanService
     {
@@ -33,6 +34,33 @@ namespace fuquizlearn_api.Services
             _context = context;
             _mapper = mapper;
         }
+
+        public async Task<bool> CheckAICount(Account account)
+        {
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == account.Id).OrderByDescending(c => c.Plan.useAICount).Select(c => c.Plan).ToListAsync();
+            if (plan.Count > 0)
+            {
+                if (plan[0].useAICount > account.useAICount)
+                {
+                    account.useAICount++;
+                    _context.Accounts.Update(account);
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                else
+                    return false;
+            }
+
+            if (10 > account.useAICount)
+            {
+                account.useAICount++;
+                _context.Accounts.Update(account);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else return false;
+        }
+
         public async Task<PlanResponse> CreatePlan(PlanCreate planCreate, Account account)
         {
             if (account.Role != Role.Admin)

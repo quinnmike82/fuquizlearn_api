@@ -16,11 +16,13 @@ namespace fuquizlearn_api.Controllers
     {
         private readonly IQuizService _quizService;
         private readonly IGeminiAIService _geminiAIService;
+        private readonly IPlanService _lanService;
 
-        public QuizController(IQuizService quizService, IGeminiAIService geminiAIService)
+        public QuizController(IQuizService quizService, IGeminiAIService geminiAIService, IPlanService lanService)
         {
             this._quizService = quizService;
             this._geminiAIService = geminiAIService;
+            _lanService = lanService;
         }
 
         [AllowAnonymous]
@@ -59,6 +61,9 @@ namespace fuquizlearn_api.Controllers
         [HttpPost("text-only-input")]
         public async Task<ActionResult<IEnumerable<QuizResponse>>> GetTextResult(QuizCreate prompt)
         {
+            var check = await _lanService.CheckAICount(Account);
+            if (!check)
+                throw new UnauthorizedAccessException();
             var result = await _geminiAIService.GetTextOnly(prompt);
             return Ok(result);
         }
@@ -66,6 +71,9 @@ namespace fuquizlearn_api.Controllers
         [HttpPost("text-image-input")]
         public async Task<ActionResult<QuizResponse>> GetTextPictureResult(Stream file, string prompt)
         {
+            var check = await _lanService.CheckAICount(Account);
+            if (!check)
+                throw new UnauthorizedAccessException();
             var result = await _geminiAIService.GetTextAndImage(file, prompt);
             return Ok(result);
         }
@@ -73,6 +81,9 @@ namespace fuquizlearn_api.Controllers
         [HttpPost("get-answer")]
         public async Task<ActionResult<QuizResponse>> GetAnswer(QuizCreate prompt)
         {
+            var check = await _lanService.CheckAICount(Account);
+            if (!check)
+                throw new UnauthorizedAccessException();
             var result = await _geminiAIService.GetAnwser(prompt);
             return Ok(result);
         }
@@ -80,6 +91,9 @@ namespace fuquizlearn_api.Controllers
         [HttpPost("get-correct-answer")]
         public async Task<ActionResult<QuizResponse>> GetCorrectAnswer(QuizCreate prompt)
         {
+            var check = await _lanService.CheckAICount(Account);
+            if (!check)
+                throw new UnauthorizedAccessException();
             var result = await _geminiAIService.CheckCorrectAnswer(prompt);
             return Ok(result);
         }
