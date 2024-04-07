@@ -63,7 +63,7 @@ namespace fuquizlearn_api.Controllers
         {
             var check = await _lanService.CheckAICount(Account);
             if (!check)
-                return Forbid();
+                return BadRequest("over count daily AI");
             var result = await _geminiAIService.GetTextOnly(prompt);
             return Ok(result);
         }
@@ -73,7 +73,7 @@ namespace fuquizlearn_api.Controllers
         {
             var check = await _lanService.CheckAICount(Account);
             if (!check)
-                return Forbid();
+                return BadRequest("over count daily AI");
             var result = await _geminiAIService.GetTextAndImage(file, prompt);
             return Ok(result);
         }
@@ -83,7 +83,7 @@ namespace fuquizlearn_api.Controllers
         {
             var check = await _lanService.CheckAICount(Account);
             if (!check)
-                return Forbid();
+                return BadRequest("over count daily AI");
             var result = await _geminiAIService.GetAnwser(prompt);
             return Ok(result);
         }
@@ -93,7 +93,7 @@ namespace fuquizlearn_api.Controllers
         {
             var check = await _lanService.CheckAICount(Account);
             if (!check)
-                return Forbid();
+                return BadRequest("over count daily AI");
             var result = await _geminiAIService.CheckCorrectAnswer(prompt);
             return Ok(result);
         }
