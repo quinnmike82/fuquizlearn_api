@@ -26,10 +26,10 @@ namespace fuquizlearn_api.Controllers
                 return Ok(newPlan);
         }
         [Authorize]
-        [HttpPost("RegistPlan/{id}")]
-        public async Task<IActionResult> RegistPlan(int id)
+        [HttpPost("RegistPlan/{id}/{transactionId}")]
+        public async Task<IActionResult> RegistPlan(int id, string transactionId)
         {
-                var newPlan = await _planService.RegisterPlan(id, Account);
+                var newPlan = await _planService.RegisterPlan(id, transactionId, Account);
                 return Ok(newPlan);
         }
         [AllowAnonymous]
@@ -38,6 +38,12 @@ namespace fuquizlearn_api.Controllers
         {
                 var plans = await _planService.GetAllPlan(options);
                 return Ok(plans);
+        }
+        [HttpGet("current")]
+        public async Task<IActionResult> GetCurrent()
+        {
+                var plans = await _planService.CheckCurrent(Account);
+                return Ok(plans.Plan);
         }
         [Authorize]
         [HttpDelete("{id}")]
