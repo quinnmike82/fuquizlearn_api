@@ -256,6 +256,7 @@ public class QuizBankService : IQuizBankService
             .Where(qb => qb.Embedding != null && qb.Id != id)
             .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
             .Include(qb => qb.Author)
+            .Include(qb => qb.Quizes)
             .Take(take)
             .Select(qb => new
             {
