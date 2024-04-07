@@ -2,7 +2,7 @@
 {
     public class CheckoutOrderResponse
     {
-        public object? Session { get; set; }
+        public string? ClientSecret { get; set; }
 
         public string? PubKey { get; set; }
     }

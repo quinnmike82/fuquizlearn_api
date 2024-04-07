@@ -37,41 +37,21 @@ namespace fuquizlearn_api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> CheckoutOrder([FromBody] Plan product, [FromServices] IServiceProvider sp)
+        public async Task<ActionResult> CheckoutOrder([FromBody] Plan product)
         {
-            var referer = Request.Headers.Referer;
-
-            // Build the URL to which the customer will be redirected after paying.
-            var server = sp.GetRequiredService<IServer>();
-
-            var serverAddressesFeature = server.Features.Get<IServerAddressesFeature>();
-
-            string? thisApiUrl = null;
-
-            if (serverAddressesFeature is not null)
-            {
-                thisApiUrl = serverAddressesFeature.Addresses.FirstOrDefault();
-            }
-
-            if (thisApiUrl is not null)
-            {
-                var session = await CheckOut(product, thisApiUrl);
+                var session = await CheckOut(product);
                 var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
-                var checkoutOrderResponse = new CheckoutOrderResponse()
+            await Console.Out.WriteLineAsync(session);
+            var checkoutOrderResponse = new CheckoutOrderResponse()
                 {
-                    Session = session,
+                    ClientSecret = session,
                     PubKey = pubKey
                 };
                 return Ok(checkoutOrderResponse);
-            }
-            else
-            {
-                return StatusCode(500);
-            }
         }
 
         [NonAction]
-        public async Task<object> CheckOut(Plan product, string thisApiUrl)
+        public async Task<string> CheckOut(Plan product)
         {
             // Create a payment flow from the items in the cart.
             // Gets sent to Stripe API.
@@ -79,39 +59,37 @@ namespace fuquizlearn_api.Controllers
             var prod = await productService.GetAsync(product.Id.ToString());
             if (prod == null)
                 throw new KeyNotFoundException();
+            var priceService = new PriceService();
+            var priceOptions = new PriceListOptions()
+            {
+                Product = prod.Id.ToString()
+            };
+            var prices = priceService.List(priceOptions);
+            var lineItems = prices.Select(p => new SessionLineItemOptions
+            {
+                Price = p.Id,
+                Quantity = 1
+            }).ToList();
             var options = new SessionCreateOptions
             {
                 // Stripe calls the URLs below when certain checkout events happen such as success and failure.
-                SuccessUrl = $"{_frontEnd.GetBaseUrl()}/checkout/success?sessionId=" + "{CHECKOUT_SESSION_ID}", // Customer paid.
-                CancelUrl = _frontEnd.GetBaseUrl() + "/failed",  // Checkout cancelled.
                 PaymentMethodTypes = new List<string> // Only card available in test mode?
             {
                 "card"
             },
-                LineItems = new List<SessionLineItemOptions>
-            {
-                new()
-                {
-                    PriceData = new SessionLineItemPriceDataOptions
-                    {
-                        UnitAmount = product.Amount,
-                        Product = prod.Id,
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = product.Title,
-                            Description = product.Description,
-                        },
-                    },
-                    Quantity = 1,
-                },
-            },
-                Mode = "subscription"
+                LineItems = lineItems,
+                Mode = "subscription",
+                UiMode = "embedded",
+                ReturnUrl = _frontEnd.GetBaseUrl() + "/return?session_id={CHECKOUT_SESSION_ID}"
+
             };
 
             var service = new SessionService();
-            Session session = service.Create(options);
+            Session session = await service.CreateAsync(options);
 
-            return (new { clientSecret = session.RawJObject["client_secret"] });
+            await Console.Out.WriteLineAsync(session.ToString());
+
+            return (string)session.RawJObject["client_secret"];
         }
 
         [HttpGet("success")]
