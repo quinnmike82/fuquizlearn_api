@@ -78,7 +78,12 @@ namespace fuquizlearn_api.Controllers
         public async Task<ActionResult> CheckoutSuccess(string sessionId)
         {
             var sessionService = new SessionService();
-            var session = sessionService.Get(sessionId);
+            var session = await sessionService.GetAsync(sessionId);
+            var check = await _planService.CheckPurchase(session.SubscriptionId);
+            if (check)
+                return BadRequest("Session is used");
+            var subscriptionService = new SubscriptionService();
+            var sub = await subscriptionService.GetAsync(session.SubscriptionId);
 
             // Here you can save order and customer details to your database.
             if (session.CustomerDetails?.Email == null)
@@ -94,8 +99,9 @@ namespace fuquizlearn_api.Controllers
             };
 
             await _transactionService.CreateTransaction(trans, Account);
-            await _planService.RegisterPlan(int.Parse(session.LineItems.Data[0].Price.Product.Id), trans.TransactionId, Account);
-            
+            await _planService.RegisterPlan(int.Parse(sub.Items.Data[0].Plan.ProductId), trans.TransactionId, Account);
+
+
             return Ok();
         }
 
@@ -108,10 +114,10 @@ namespace fuquizlearn_api.Controllers
                 await _planService.CancelledSubcribe(Account);
                 var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = true };
                 var service = new SubscriptionService();
-                await service.UpdateAsync(check.Plan.Id.ToString(), options);
+                await service.UpdateAsync(check.TransactionId, options);
                 return Ok();
             }
-            else return BadRequest();
+            else return BadRequest("No Plan currently");
         }
     }
 }

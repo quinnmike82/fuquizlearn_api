@@ -12,6 +12,7 @@ namespace fuquizlearn_api.Entities
         public int Duration { get; set; }
         public int Amount { get; set; }
         public int MaxStudent { get; set; }
+        public int MaxClassroom { get; set; }
         public int useAICount { get; set; }
         public bool IsRelease { get; set; }
         public DateTime? Deleted { get; set; }

@@ -80,6 +80,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
+            await CheckMember(classRoom, 1);
             var classroomMember = new ClassroomMember
             {
                 AccountId = addMember.memberId,
@@ -200,7 +201,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new AppException("Banned");
             }
-
+            await CheckMember(classroom, memberIds.Count());
             memberIds = memberIds.Distinct().ToList();
 
             if (classroom.AccountIds != null)
@@ -297,6 +298,8 @@ namespace fuquizlearn_api.Services
 
         public async Task<ClassroomResponse> CreateClassroom(ClassroomCreate classroom, Account account)
         {
+            if(account.Role != Role.Admin)
+                await CheckMaxClassroom(account);
             var newClass = _mapper.Map<Classroom>(classroom);
             newClass.Account = account;
             _context.Classrooms.Add(newClass);
@@ -519,6 +522,7 @@ namespace fuquizlearn_api.Services
             var code = classroom.ClassroomCodes.Single(i => i.Code == classroomCode);
             if (code.IsExpired)
                 throw new AppException("Invalid Code");
+            await CheckMember(classroom, 1);
             var classroomMember = new ClassroomMember
             {
                 AccountId = account.Id,
@@ -697,5 +701,38 @@ namespace fuquizlearn_api.Services
             );
         }
 
+
+        private async Task CheckMember(Classroom classroom, int member)
+        {
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == classroom.Account.Id).SingleOrDefaultAsync();
+            if(plan != null)
+            {
+                if(plan.Plan.MaxStudent < (classroom.AccountIds.Count() + member))
+                {
+                    throw new AppException("Max Members");
+                }
+            }
+            if(classroom.AccountIds.Count() + member > 15)
+            {
+                throw new AppException("Max Members");
+            }
+        }
+        
+        private async Task CheckMaxClassroom(Account account)
+        {
+            var classrooms = await _context.Classrooms.Where(c => c.Account.Id == account.Id).CountAsync();
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == account.Id).SingleOrDefaultAsync();
+            if (plan != null)
+            {
+                if (plan.Plan.MaxClassroom < (classrooms + 1))
+                {
+                    throw new AppException("Max Classrooms");
+                }
+            }
+            if (classrooms + 1 > 3)
+            {
+                throw new AppException("Max Classrooms");
+            }
+        }
     }
 }

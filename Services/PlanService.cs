@@ -32,6 +32,7 @@ namespace fuquizlearn_api.Services
         Task CancelledSubcribe(Account account);
         Task<bool> CheckAICount(Account account);
         Task<Plan> GetById(int id);
+        Task<bool> CheckPurchase(string transactionId);
     }
     public class PlanService : IPlanService
     {
@@ -83,7 +84,12 @@ namespace fuquizlearn_api.Services
 
         public async Task<PlanAccount> CheckCurrent(Account account)
         {
-            return await _context.PlanAccounts.Include(c => c.Plan).Include(c => c.Account).FirstOrDefaultAsync(c => c.Account.Id == account.Id);
+            return await _context.PlanAccounts.Include(c => c.Plan).Include(c => c.Account).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
+        }
+
+        public async Task<bool> CheckPurchase(string transactionId)
+        {
+            return await _context.PlanAccounts.Where(c => c.TransactionId == transactionId).AnyAsync();
         }
 
         public async Task<PlanResponse> CreatePlan(PlanCreate planCreate, Account account)
