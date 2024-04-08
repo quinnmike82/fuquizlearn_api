@@ -51,7 +51,7 @@ namespace fuquizlearn_api.Controllers
                 // Stripe calls the URLs below when certain checkout events happen such as success and failure.
                 PaymentMethodTypes = new List<string> // Only card available in test mode?
             {
-                "card", "paypal", "wechat_pay" 
+                "card"
             },
                 LineItems = lineItems,
                 Mode = "subscription",
