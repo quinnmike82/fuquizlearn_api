@@ -1,18 +1,7 @@
 ﻿using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Transaction;
 using fuquizlearn_api.Services;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Stripe.Checkout;
 using Stripe;
 using Plan = fuquizlearn_api.Entities.Plan;
@@ -37,26 +26,13 @@ namespace fuquizlearn_api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> CheckoutOrder([FromBody] Plan product)
+        public async Task<ActionResult> CheckoutOrder(int planId)
         {
-                var session = await CheckOut(product);
-                var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
-            await Console.Out.WriteLineAsync(session);
-            var checkoutOrderResponse = new CheckoutOrderResponse()
-                {
-                    ClientSecret = session,
-                    PubKey = pubKey
-                };
-                return Ok(checkoutOrderResponse);
-        }
-
-        [NonAction]
-        public async Task<string> CheckOut(Plan product)
-        {
-            // Create a payment flow from the items in the cart.
-            // Gets sent to Stripe API.
+            var plan = await _planService.GetById(planId);
+            if(plan == null)
+                throw new KeyNotFoundException(nameof(plan));
             var productService = new ProductService();
-            var prod = await productService.GetAsync(product.Id.ToString());
+            var prod = await productService.GetAsync(plan.Id.ToString());
             if (prod == null)
                 throw new KeyNotFoundException();
             var priceService = new PriceService();
@@ -75,21 +51,25 @@ namespace fuquizlearn_api.Controllers
                 // Stripe calls the URLs below when certain checkout events happen such as success and failure.
                 PaymentMethodTypes = new List<string> // Only card available in test mode?
             {
-                "card"
+                "card", "paypal", "wechatPay" 
             },
                 LineItems = lineItems,
                 Mode = "subscription",
                 UiMode = "embedded",
-                ReturnUrl = _frontEnd.GetBaseUrl() + "/return?session_id={CHECKOUT_SESSION_ID}"
-
+                RedirectOnCompletion = "never"
             };
 
             var service = new SessionService();
             Session session = await service.CreateAsync(options);
 
-            await Console.Out.WriteLineAsync(session.ToString());
-
-            return (string)session.RawJObject["client_secret"];
+            var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
+            var checkoutOrderResponse = new CheckoutOrderResponse()
+            {
+                ClientSecret = (string)session.RawJObject["client_secret"],
+                SessionId = session.Id,
+                PubKey = pubKey
+            };
+            return Ok(checkoutOrderResponse);
         }
 
         [HttpGet("success")]

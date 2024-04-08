@@ -31,6 +31,7 @@ namespace fuquizlearn_api.Services
         Task<PlanAccount> CheckCurrent(Account account);
         Task CancelledSubcribe(Account account);
         Task<bool> CheckAICount(Account account);
+        Task<Plan> GetById(int id);
     }
     public class PlanService : IPlanService
     {
@@ -134,6 +135,11 @@ namespace fuquizlearn_api.Services
                 Data = _mapper.Map<IEnumerable<PlanResponse>>(plan.Data),
                 Metadata = plan.Metadata
             };
+        }
+
+        public async Task<Plan> GetById(int id)
+        {
+            return await _context.Plans.FindAsync(id);
         }
 
         public async Task<PlanAccount> RegisterPlan(int id, string transactionId, Account account)
