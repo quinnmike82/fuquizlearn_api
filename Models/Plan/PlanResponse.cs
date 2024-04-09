@@ -10,5 +10,6 @@
         public int MaxStudent { get; set; }
         public int useAICount { get; set; }
         public bool IsRelease { get; set; }
+        public bool IsCurrent { get; set; }
     }
 }

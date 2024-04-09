@@ -26,7 +26,7 @@ namespace fuquizlearn_api.Services
         Task<PlanResponse> UpdatePlan(PlanUpdate planUpdate, Account account);
         Task<PlanResponse> UnReleasePlan(int id, Account account);
         Task RemovePlan(int id, Account account);
-        Task<PagedResponse<PlanResponse>> GetAllPlan(PagedRequest options);
+        Task<List<PlanResponse>> GetAllPlan(Account account);
         Task<PlanAccount> RegisterPlan(int id, string transactionId, Account account);
         Task<PlanAccount> CheckCurrent(Account account);
         Task CancelledSubcribe(Account account);
@@ -132,15 +132,22 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<PlanResponse>(plan);
         }
 
-        public async Task<PagedResponse<PlanResponse>> GetAllPlan(PagedRequest options)
+        public async Task<List<PlanResponse>> GetAllPlan(Account account)
         {
-            var plan = await _context.Plans.ToPagedAsync(options,
-            x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()) || x.Description.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-            return new PagedResponse<PlanResponse>
+            var plan = await _context.Plans.ToListAsync();
+            var planRes = _mapper.Map<List<PlanResponse>>(plan);
+            var current = await _context.PlanAccounts.Where(c => c.Account.Id == account.Id && c.Cancelled == null).FirstAsync();
+            if (current == null)
+                return planRes;
+            foreach( var c in planRes)
             {
-                Data = _mapper.Map<IEnumerable<PlanResponse>>(plan.Data),
-                Metadata = plan.Metadata
+                if(c.Id == current.Id)
+                {
+                    c.IsCurrent = true;
+                    break;
+                }
             };
+            return planRes;
         }
 
         public async Task<Plan> GetById(int id)

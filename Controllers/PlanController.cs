@@ -34,16 +34,10 @@ namespace fuquizlearn_api.Controllers
         }
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetAllPlans([FromQuery] PagedRequest options)
+        public async Task<IActionResult> GetAllPlans()
         {
-                var plans = await _planService.GetAllPlan(options);
+                var plans = await _planService.GetAllPlan(Account);
                 return Ok(plans);
-        }
-        [HttpGet("current")]
-        public async Task<IActionResult> GetCurrent()
-        {
-                var plans = await _planService.CheckCurrent(Account);
-                return Ok(plans.Plan);
         }
         [Authorize]
         [HttpDelete("{id}")]
