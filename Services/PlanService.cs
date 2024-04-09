@@ -134,7 +134,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<List<PlanResponse>> GetAllPlan(Account account)
         {
-            var plan = await _context.Plans.ToListAsync();
+            var plan = await _context.Plans.OrderBy(c => c.Amount).ToListAsync();
             var planRes = _mapper.Map<List<PlanResponse>>(plan);
             var current = await _context.PlanAccounts.Include(c => c.Plan).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
             if (current == null)
