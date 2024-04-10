@@ -26,17 +26,17 @@ namespace fuquizlearn_api.Controllers
                 return Ok(newPlan);
         }
         [Authorize]
-        [HttpPost("RegistPlan/{id}")]
-        public async Task<IActionResult> RegistPlan(int id)
+        [HttpPost("RegistPlan/{id}/{transactionId}")]
+        public async Task<IActionResult> RegistPlan(int id, string transactionId)
         {
-                var newPlan = await _planService.RegisterPlan(id, Account);
+                var newPlan = await _planService.RegisterPlan(id, transactionId, Account);
                 return Ok(newPlan);
         }
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetAllPlans([FromQuery] PagedRequest options)
+        public async Task<IActionResult> GetAllPlans()
         {
-                var plans = await _planService.GetAllPlan(options);
+                var plans = await _planService.GetAllPlan(Account);
                 return Ok(plans);
         }
         [Authorize]

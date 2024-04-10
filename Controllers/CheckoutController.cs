@@ -1,99 +1,75 @@
 ﻿using fuquizlearn_api.Entities;
 using fuquizlearn_api.Models.Transaction;
 using fuquizlearn_api.Services;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc;
 using Stripe.Checkout;
+using Stripe;
+using Plan = fuquizlearn_api.Entities.Plan;
+using fuquizlearn_api.Authorization;
+
 namespace fuquizlearn_api.Controllers
 {
+    [Authorize]
     [ApiController]
     public class CheckoutController : BaseController
     {
         private readonly IConfiguration _configuration;
         private readonly IHelperFrontEnd _frontEnd;
         private readonly ITransactionService _transactionService;
-        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService)
+        private readonly IPlanService _planService;
+        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService, IPlanService planService)
         {
             _configuration = configuration;
             _frontEnd = frontEnd;
             _transactionService = transactionService;
+            _planService = planService;
         }
 
         [HttpPost]
-        public async Task<ActionResult> CheckoutOrder([FromBody] Plan product, [FromServices] IServiceProvider sp)
+        public async Task<ActionResult> CheckoutOrder(int planId)
         {
-            var referer = Request.Headers.Referer;
-
-            // Build the URL to which the customer will be redirected after paying.
-            var server = sp.GetRequiredService<IServer>();
-
-            var serverAddressesFeature = server.Features.Get<IServerAddressesFeature>();
-
-            string? thisApiUrl = null;
-
-            if (serverAddressesFeature is not null)
+            var plan = await _planService.GetById(planId);
+            if(plan == null)
+                throw new KeyNotFoundException(nameof(plan));
+            var productService = new ProductService();
+            var prod = await productService.GetAsync(plan.Id.ToString());
+            if (prod == null)
+                throw new KeyNotFoundException();
+            var priceService = new PriceService();
+            var priceOptions = new PriceListOptions()
             {
-                thisApiUrl = serverAddressesFeature.Addresses.FirstOrDefault();
-            }
-
-            if (thisApiUrl is not null)
+                Product = prod.Id.ToString()
+            };
+            var prices = priceService.List(priceOptions);
+            var lineItems = prices.Select(p => new SessionLineItemOptions
             {
-                var sessionId = await CheckOut(product, thisApiUrl);
-                var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
-
-                var checkoutOrderResponse = new CheckoutOrderResponse()
-                {
-                    SessionId = sessionId,
-                    PubKey = pubKey
-                };
-
-                return Ok(checkoutOrderResponse);
-            }
-            else
-            {
-                return StatusCode(500);
-            }
-        }
-
-        [NonAction]
-        public async Task<string> CheckOut(Plan product, string thisApiUrl)
-        {
-            // Create a payment flow from the items in the cart.
-            // Gets sent to Stripe API.
+                Price = p.Id,
+                Quantity = 1
+            }).ToList();
             var options = new SessionCreateOptions
             {
                 // Stripe calls the URLs below when certain checkout events happen such as success and failure.
-                SuccessUrl = $"{_frontEnd.GetBaseUrl()}/checkout/success?sessionId=" + "{CHECKOUT_SESSION_ID}", // Customer paid.
-                CancelUrl = _frontEnd.GetBaseUrl() + "/failed",  // Checkout cancelled.
                 PaymentMethodTypes = new List<string> // Only card available in test mode?
             {
                 "card"
             },
-                LineItems = new List<SessionLineItemOptions>
-            {
-                new()
-                {
-                    PriceData = new SessionLineItemPriceDataOptions
-                    {
-                        UnitAmount = product.Amount, // Price is in USD cents.
-                        Currency = "USD",
-                        ProductData = new SessionLineItemPriceDataProductDataOptions
-                        {
-                            Name = product.Title,
-                            Description = product.Description,
-                        },
-                    },
-                    Quantity = 1,
-                },
-            },
-                Mode = "payment" // One-time payment. Stripe supports recurring 'subscription' payments.
+                LineItems = lineItems,
+                Mode = "subscription",
+                UiMode = "embedded",
+                RedirectOnCompletion = "never"
             };
 
             var service = new SessionService();
-            var session = await service.CreateAsync(options);
+            Session session = await service.CreateAsync(options);
 
-            return session.Id;
+            var pubKey = _configuration["AppSettings:StripeKey:PublicKey"];
+            var checkoutOrderResponse = new CheckoutOrderResponse()
+            {
+                ClientSecret = (string)session.RawJObject["client_secret"],
+                SessionId = session.Id,
+                PubKey = pubKey
+            };
+            return Ok(checkoutOrderResponse);
         }
 
         [HttpGet("success")]
@@ -102,7 +78,12 @@ namespace fuquizlearn_api.Controllers
         public async Task<ActionResult> CheckoutSuccess(string sessionId)
         {
             var sessionService = new SessionService();
-            var session = sessionService.Get(sessionId);
+            var session = await sessionService.GetAsync(sessionId);
+            var check = await _planService.CheckPurchase(session.SubscriptionId);
+            if (check)
+                return BadRequest("Session is used");
+            var subscriptionService = new SubscriptionService();
+            var sub = await subscriptionService.GetAsync(session.SubscriptionId);
 
             // Here you can save order and customer details to your database.
             if (session.CustomerDetails?.Email == null)
@@ -113,13 +94,30 @@ namespace fuquizlearn_api.Controllers
             {
                 Amount = (int)total,
                 Email= customerEmail,
-                TransactionId = sessionId,
+                TransactionId = session.SubscriptionId,
                 TransactionType = session.PaymentMethodCollection,
             };
 
             await _transactionService.CreateTransaction(trans, Account);
+            await _planService.RegisterPlan(int.Parse(sub.Items.Data[0].Plan.ProductId), trans.TransactionId, Account);
+
 
             return Ok();
+        }
+
+        [HttpPut("cancel")]
+        public async Task<ActionResult> CancelSubcribe()
+        {
+            var check = await _planService.CheckCurrent(Account);
+            if(check != null)
+            {
+                await _planService.CancelledSubcribe(Account);
+                var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = true };
+                var service = new SubscriptionService();
+                await service.UpdateAsync(check.TransactionId, options);
+                return Ok();
+            }
+            else return BadRequest("No Plan currently");
         }
     }
 }

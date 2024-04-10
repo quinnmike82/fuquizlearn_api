@@ -17,7 +17,7 @@ namespace fuquizlearn_api.Services
         Task<TransactionResponse> CreateTransaction(TransactionCreate transactionCreate, Account account);
         Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account);
         Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options,int month, Account account);
-        Task<ChartTransaction> GetByMonth(int month, int year, Account account);
+        Task<List<ChartTransaction>> GetByYear(int year, Account account);
     }
     public class TransactionService : ITransactionService
     {
@@ -84,11 +84,11 @@ namespace fuquizlearn_api.Services
             };
         }
 
-        public async Task<ChartTransaction> GetByMonth(int month, int year, Account account)
+        public async Task<List<ChartTransaction>> GetByYear(int year, Account account)
         {
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            return await _context.ChartTransactions.FirstOrDefaultAsync(c => c.Month == month && c.Year == year);
+            return await _context.ChartTransactions.Where(c => c.Year == year).OrderBy(c => c.Month).ToListAsync();
         }
     }
 }

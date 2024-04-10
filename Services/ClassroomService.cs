@@ -63,7 +63,7 @@ namespace fuquizlearn_api.Services
         }
         public async Task AddMember(AddMember addMember, Account account)
         {
-            var classRoom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == addMember.classroomId);
+            var classRoom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == addMember.classroomId && c.DeletedAt == null);
             if (classRoom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
@@ -80,6 +80,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
+            await CheckMember(classRoom, 1);
             var classroomMember = new ClassroomMember
             {
                 AccountId = addMember.memberId,
@@ -101,7 +102,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<QuizBankResponse> AddQuizBank(int classroomId, QuizBankCreate model, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             var quizBank = _mapper.Map<QuizBank>(model);
@@ -126,7 +127,7 @@ namespace fuquizlearn_api.Services
 
         public async Task BanMember(int id, int memberId, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (memberId != classroom.Account.Id && account.Role != Role.Admin)
@@ -157,7 +158,7 @@ namespace fuquizlearn_api.Services
 
         public async Task BanMember(int id, BatchMemberRequest membersRequest, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (account.Id != classroom.Account.Id && account.Role != Role.Admin)
@@ -189,7 +190,7 @@ namespace fuquizlearn_api.Services
 
         public async Task BatchAddMember(int classroomId, Account account, List<int> memberIds)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (!(classroom.Account.Id == account.Id || account.Role != Role.Admin))
@@ -200,7 +201,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new AppException("Banned");
             }
-
+            await CheckMember(classroom, memberIds.Count());
             memberIds = memberIds.Distinct().ToList();
 
             if (classroom.AccountIds != null)
@@ -225,7 +226,7 @@ namespace fuquizlearn_api.Services
 
         public async Task BatchRemoveMember(int classroomId, Account account, List<int> memberIds)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (!(classroom.Account.Id == account.Id || account.Role != Role.Admin))
@@ -258,7 +259,7 @@ namespace fuquizlearn_api.Services
             var quizBank = await _context.QuizBanks.Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == quizbankId);
             if (quizBank == null)
                 throw new KeyNotFoundException("Could not find QuizBank");
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Cound not find Classroom");
             if (account.Id != classroom.Account.Id && account.Role != Role.Admin && Array.IndexOf(classroom.AccountIds,account.Id) == -1)
@@ -297,6 +298,8 @@ namespace fuquizlearn_api.Services
 
         public async Task<ClassroomResponse> CreateClassroom(ClassroomCreate classroom, Account account)
         {
+            if(account.Role != Role.Admin)
+                await CheckMaxClassroom(account);
             var newClass = _mapper.Map<Classroom>(classroom);
             newClass.Account = account;
             _context.Classrooms.Add(newClass);
@@ -306,12 +309,12 @@ namespace fuquizlearn_api.Services
 
         public async Task DeleteClassroom(int id, Account account)
         {
-            var classRoom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
+            var classRoom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
             if (classRoom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
             }
-            if (!(classRoom.Account.Id == account.Id || account.Role != Role.Admin))
+            if (classRoom.Account.Id != account.Id && account.Role != Role.Admin)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
             }
@@ -322,7 +325,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<ClassroomCodeResponse> GenerateClassroomCode(int classroomId, Account account)   
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
             var isAllow = classroom.Account.Id == account.Id;
@@ -348,7 +351,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<QuizBankResponse>> GetAllBankFromClass(int classroomId, PagedRequest options, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == classroomId && i.DeletedAt == null);
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
             var isAllow = classroom.Account.Id == account.Id;
@@ -435,7 +438,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<ClassroomMemberResponse>> GetAllMember(int id, Account account, PagedRequest options)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find classroom");
@@ -501,7 +504,7 @@ namespace fuquizlearn_api.Services
 
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
         {
-            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode));
+            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode) && i.DeletedAt == null);
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
@@ -519,6 +522,7 @@ namespace fuquizlearn_api.Services
             var code = classroom.ClassroomCodes.Single(i => i.Code == classroomCode);
             if (code.IsExpired)
                 throw new AppException("Invalid Code");
+            await CheckMember(classroom, 1);
             var classroomMember = new ClassroomMember
             {
                 AccountId = account.Id,
@@ -584,7 +588,7 @@ namespace fuquizlearn_api.Services
 
         public async Task SentInvitationEmail(int classroomId, BatchMemberRequest batchMemberRequest, Account account)
         {
-            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId && c.DeletedAt == null);
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
@@ -697,5 +701,38 @@ namespace fuquizlearn_api.Services
             );
         }
 
+
+        private async Task CheckMember(Classroom classroom, int member)
+        {
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == classroom.Account.Id).SingleOrDefaultAsync();
+            if(plan != null)
+            {
+                if(plan.Plan.MaxStudent < (classroom.AccountIds.Count() + member))
+                {
+                    throw new AppException("Max Members");
+                }
+            }
+            if(classroom.AccountIds.Count() + member > 15)
+            {
+                throw new AppException("Max Members");
+            }
+        }
+        
+        private async Task CheckMaxClassroom(Account account)
+        {
+            var classrooms = await _context.Classrooms.Where(c => c.Account.Id == account.Id && c.DeletedAt == null).CountAsync();
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == account.Id).SingleOrDefaultAsync();
+            if (plan != null)
+            {
+                if (plan.Plan.MaxClassroom < (classrooms + 1))
+                {
+                    throw new AppException("classroom.max_classrooms");
+                }
+            }
+            if (classrooms + 1 > 3)
+            {
+                throw new AppException("classroom.max_classrooms");
+            }
+        }
     }
 }

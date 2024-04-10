@@ -173,7 +173,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<GameResponse>> GetAllByClassId(int classroomId, PagedRequest option, Account account)
         {
-            var classroom = await _context.Classrooms.FindAsync(classroomId);
+            var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId);
             if (classroom == null)
             {
                 throw new KeyNotFoundException($"Can not found classroom with id: {classroomId}");
