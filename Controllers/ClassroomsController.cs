@@ -63,7 +63,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> AddMember([FromBody] AddMember addMember)
         {
             await _classroomService.AddMember(addMember, Account);
-            return Ok();
+            return Ok("Add member successfully");
         }
 
         [HttpPost("batchaddmember/{classroomId}")]
@@ -72,7 +72,7 @@ namespace fuquizlearn_api.Controllers
             [FromBody] BatchMemberRequest batchMemberRequest)
         {
             await _classroomService.BatchAddMember(classroomId, Account, batchMemberRequest.MemberIds);
-            return Ok();
+            return Ok("Add batch members successfully");
         }
 
         [HttpDelete("removemember/{memberId}/{classroomId}")]
@@ -80,7 +80,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> RemoveMember(int memberId, int classroomId)
         {
             await _classroomService.RemoveMember(memberId, classroomId, Account);
-            return Ok();
+            return Ok("Remove member successfully");
         }
 
         [HttpDelete("batchremovemember/{classroomId}")]
@@ -89,7 +89,7 @@ namespace fuquizlearn_api.Controllers
             [FromBody] BatchMemberRequest batchMemberRequest)
         {
             await _classroomService.BatchRemoveMember(classroomId, Account, batchMemberRequest.MemberIds);
-            return Ok();
+            return Ok("Remove batch members successfully");
         }
 
         [HttpDelete("{id}")]
@@ -121,7 +121,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> JoinClassroomWithCode(string classroomCode)
         {
             await _classroomService.JoinClassroomWithCode(classroomCode, Account);
-            return Ok();
+            return Ok("Joined classroom successfully");
         }
 
         [HttpPost("addquizbank/{classroomId}")]
@@ -139,7 +139,7 @@ namespace fuquizlearn_api.Controllers
         {
             var newName = quizBankUpdate.BankName ?? "";
             await _classroomService.CopyQuizBank(quizbankId, classroomId, newName, Account);
-            return Ok();
+            return Ok("Copy Quizbank successfully");
         }
 
         [HttpPut("update")]
@@ -181,7 +181,7 @@ namespace fuquizlearn_api.Controllers
             [FromBody] BatchMemberRequest batchMemberRequest)
         {
             await _classroomService.SentInvitationEmail(classroomId, batchMemberRequest, Account);
-            return Ok();
+            return Ok("Send invitation email successfully");
         }
 
         [HttpPost("{classroomId}/users")]
@@ -189,7 +189,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> BanMember(int classroomId, [FromBody] BatchMemberRequest members)
         {
             await _classroomService.BanMember(classroomId, members, Account);
-            return Ok();
+            return Ok("Ban user successfully");
         }
 
         [HttpPut("{classroomId}/users")]
@@ -197,7 +197,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> UnbanMember(int classroomId, [FromBody] BatchMemberRequest members)
         {
             await _classroomService.UnbanMember(classroomId, members, Account);
-            return Ok();
+            return Ok("Unban user successfully");
         }
 
         [HttpGet("{classroomId}/users")]
@@ -214,7 +214,7 @@ namespace fuquizlearn_api.Controllers
         public async Task<IActionResult> LeaveClassroom(int classroomId)
         {
             await _classroomService.LeaveClassroom(classroomId, Account);
-            return Ok();
+            return Ok("Leave classroom successfully");
         }
 
         [HttpGet("classroom/{classroomId}/quizbank/")]
