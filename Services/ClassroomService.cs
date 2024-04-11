@@ -504,7 +504,7 @@ namespace fuquizlearn_api.Services
 
         public async Task JoinClassroomWithCode(string classroomCode, Account account)
         {
-            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode) && i.DeletedAt == null);
+            var classroom = await _context.Classrooms.Include(i => i.ClassroomCodes).Include(c => c.Account).FirstOrDefaultAsync(i => i.ClassroomCodes.Any(c => c.Code == classroomCode) && i.DeletedAt == null);
             if (classroom == null)
             {
                 throw new KeyNotFoundException("Could not find Classroom");
@@ -704,7 +704,7 @@ namespace fuquizlearn_api.Services
 
         private async Task CheckMember(Classroom classroom, int member)
         {
-            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == classroom.Account.Id).SingleOrDefaultAsync();
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).FirstOrDefaultAsync(c => c.Account.Id == classroom.Account.Id && c.Cancelled == null);
             if(plan != null)
             {
                 if(plan.Plan.MaxStudent < (classroom.AccountIds.Count() + member))
@@ -721,7 +721,7 @@ namespace fuquizlearn_api.Services
         private async Task CheckMaxClassroom(Account account)
         {
             var classrooms = await _context.Classrooms.Where(c => c.Account.Id == account.Id && c.DeletedAt == null).CountAsync();
-            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).Where(c => c.Account.Id == account.Id).SingleOrDefaultAsync();
+            var plan = await _context.PlanAccounts.Include(c => c.Account).Include(c => c.Plan).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
             if (plan != null)
             {
                 if (plan.Plan.MaxClassroom < (classrooms + 1))
