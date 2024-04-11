@@ -7,6 +7,7 @@ using fuquizlearn_api.Models.Classroom;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Text;
 using System.Web;
 
@@ -185,7 +186,7 @@ namespace fuquizlearn_api.Services
 
             var games = await _context.Games.Where(g => g.ClassroomId == classroomId)
             .ToPagedAsync(option,
-                g => g.GameName.IndexOf(HttpUtility.UrlDecode(option.Search, Encoding.ASCII), StringComparison.OrdinalIgnoreCase) >= 0);
+                g => g.GameName.ToLower().Contains(HttpUtility.UrlDecode(option.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<GameResponse>
             {
                 Data = _mapper.Map<List<GameResponse>>(games.Data),
