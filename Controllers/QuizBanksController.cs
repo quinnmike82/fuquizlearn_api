@@ -23,7 +23,7 @@ public class QuizBankController : BaseController
     [HttpGet]
     public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetAll([FromQuery] PagedRequest options)
     {
-        var result = await _quizBankService.GetAll(options);
+        var result = await _quizBankService.GetAll(options, Account);
         return Ok(result);
     }
 
@@ -32,6 +32,13 @@ public class QuizBankController : BaseController
     public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetBySubject([FromQuery] string tag, [FromQuery] PagedRequest options)
     {
         var result = await _quizBankService.GetBySubject(options, tag, Account);
+        return Ok(result);
+    }
+    [AllowAnonymous]
+    [HttpGet("GetOther")]
+    public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetOther([FromQuery] PagedRequest options)
+    {
+        var result = await _quizBankService.GetBySubject(options, Account);
         return Ok(result);
     }
 
@@ -85,9 +92,9 @@ public class QuizBankController : BaseController
 
     [AllowAnonymous]
     [HttpGet("related/{id:int}")]
-    public ActionResult<IEnumerable<QuizBankResponse>> GetRelated(int id)
+    public async Task<ActionResult<IEnumerable<QuizBankResponse>>> GetRelated(int id)
     {
-        var result = _quizBankService.GetRelated(id);
+        var result = await _quizBankService.GetRelated(id);
         return Ok(result);
     }
 

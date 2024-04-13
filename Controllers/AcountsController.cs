@@ -97,7 +97,7 @@ public class AccountsController : BaseController
     {
         try
         {
-            _accountService.BanAccount(id, Request.Headers["origin"]);
+            _accountService.BanAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account banned successfully" });
         }
         catch (AppException ex)
@@ -111,7 +111,7 @@ public class AccountsController : BaseController
     {
         try
         {
-            _accountService.UnbanAccount(id, Request.Headers["origin"]);
+            _accountService.UnbanAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account unbanned successfully" });
         }
         catch (AppException ex)
@@ -126,7 +126,7 @@ public class AccountsController : BaseController
     {
         try
         {
-            _accountService.WarningAccount(id, Request.Headers["origin"]);
+            _accountService.WarningAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account warned successfully" });
         }
         catch (AppException ex)

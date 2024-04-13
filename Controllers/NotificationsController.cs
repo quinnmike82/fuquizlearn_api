@@ -44,7 +44,7 @@ namespace fuquizlearn_api.Controllers
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] PagedRequest options)
         {
-                var notifications = await _notificationService.GetAll(options);
+                var notifications = await _notificationService.GetAll(options, Account);
                 return Ok(notifications);
         }
         [Authorize]

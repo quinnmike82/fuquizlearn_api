@@ -23,7 +23,7 @@ namespace fuquizlearn_api.Services
         Task<NotificationResponse> ReadNotification(int id, Account account);
         Task<int> GetUnread(Account account);
         Task NotificationTrigger(List<int> userIds, string type, string description, string objectName);
-        Task<PagedResponse<NotificationResponse>> GetAll(PagedRequest options);
+        Task<PagedResponse<NotificationResponse>> GetAll(PagedRequest options, Account account);
     }
     public class NotificationService : INotificationService
     {
@@ -87,8 +87,10 @@ namespace fuquizlearn_api.Services
                 Metadata = noti.Metadata
             };
         }
-        public async Task<PagedResponse<NotificationResponse>> GetAll(PagedRequest options)
+        public async Task<PagedResponse<NotificationResponse>> GetAll(PagedRequest options, Account account)
         {
+            if (account.Role != Role.Admin)
+                throw new UnauthorizedAccessException();
             var noti = await _context.Notifications.Include(i => i.Account).OrderByDescending(c => c.Created).ToPagedAsync(options,
            x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 

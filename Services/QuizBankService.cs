@@ -14,27 +14,29 @@ using Hangfire;
 using Microsoft.EntityFrameworkCore.Internal;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
+using System.Linq;
 
 namespace fuquizlearn_api.Services;
 
 public interface IQuizBankService
 {
-    Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options);
-    QuizBankResponse GetById(int id);
+    Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options, Account account);
+    Task<QuizBankResponse> GetById(int id);
     Task<QuizBankResponse> Create(Account currentUser, QuizBankCreate model);
-    QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser);
-    QuizBankResponse Update(int id, QuizBankUpdate model);
+    Task<QuizBankResponse> Update(int id, QuizBankUpdate model, Account currentUser);
+    Task<QuizBankResponse> Update(int id, QuizBankUpdate model);
     void Delete(int id, Account currentUser);
-    void DeleteQuiz(int id, int quizId, Account account);
-    QuizBankResponse UpdateQuiz(int id, int quizId, QuizUpdate model, Account account);
-    QuizBankResponse AddQuiz(Account account, QuizCreate model, int id);
-    QuizBankResponse Rating(int id, Account account, int rating);
-    IEnumerable<QuizBankResponse> GetRelated(int id);
+    Task DeleteQuiz(int id, int quizId, Account account);
+    Task<QuizBankResponse> UpdateQuiz(int id, int quizId, QuizUpdate model, Account account);
+    Task<QuizBankResponse> AddQuiz(Account account, QuizCreate model, int id);
+    Task<QuizBankResponse> Rating(int id, Account account, int rating);
+    Task<IEnumerable<QuizBankResponse>> GetRelated(int id);
     Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account);
     Task<ProgressResponse> SaveProgress(int quizbankId, Account account, SaveProgressRequest saveProgressRequest);
     Task<ProgressResponse> GetProgress(int quizbankId, Account account);
     Task<QuizBankResponse> CopyQuizBank(string newQuizBankName, int quizbankId, Account account);
     Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account);
+    Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, Account account);
 }
 
 public class QuizBankService : IQuizBankService
@@ -43,19 +45,21 @@ public class QuizBankService : IQuizBankService
     private readonly IMapper _mapper;
     private readonly IGeminiAIService _geminiAiService;
     private readonly IQuizService _quizService;
+    private readonly INotificationService _notificationService;
 
 
-    public QuizBankService(DataContext context, IMapper mapper, IGeminiAIService geminiAiService
+    public QuizBankService(DataContext context, IMapper mapper, IGeminiAIService geminiAiService, INotificationService notificationService
     )
     {
         _context = context;
         _mapper = mapper;
         _geminiAiService = geminiAiService;
+        _notificationService = notificationService;
     }
 
-    public QuizBankResponse AddQuiz(Account account, QuizCreate model, int id)
+    public async Task<QuizBankResponse> AddQuiz(Account account, QuizCreate model, int id)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         if (account.Id != quizBank.Author.Id) throw new UnauthorizedAccessException();
 
         var quiz = _mapper.Map<Quiz>(model);
@@ -70,7 +74,7 @@ public class QuizBankService : IQuizBankService
 
     public async Task<QuizBankResponse> CopyQuizBank(string newQuizBankName, int quizbankId, Account account)
     {
-        var quizBank = GetQuizBank(quizbankId);
+        var quizBank = await GetQuizBank(quizbankId);
         var newName = newQuizBankName.Trim() != "" ? newQuizBankName : quizBank.BankName;
         var newBank = new QuizBank
         {
@@ -115,9 +119,9 @@ public class QuizBankService : IQuizBankService
     }
 
 
-    public QuizBankResponse Update(int id, QuizBankUpdate model)
+    public async Task<QuizBankResponse> Update(int id, QuizBankUpdate model)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         _mapper.Map(model, quizBank);
         quizBank.Updated = DateTime.UtcNow;
 
@@ -127,19 +131,20 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public void Delete(int id, Account currentUser)
+    public async void Delete(int id, Account currentUser)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         if (currentUser.Role != Role.Admin && currentUser.Id != quizBank.Author.Id)
             throw new UnauthorizedAccessException("Unauthorized");
-
+        if(currentUser.Role == Role.Admin)
+            await _notificationService.NotificationTrigger(new List<int> { quizBank.Author.Id }, "Warning", "deleted_quizbank", quizBank.BankName);
         _context.QuizBanks.Remove(quizBank);
         _context.SaveChanges();
     }
 
-    public void DeleteQuiz(int id, int quizId, Account account)
+    public async Task DeleteQuiz(int id, int quizId, Account account)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         if (account.Role != Role.Admin && account.Id != quizBank.Author.Id)
             throw new UnauthorizedAccessException("Unauthorized");
 
@@ -152,8 +157,10 @@ public class QuizBankService : IQuizBankService
         _context.SaveChanges();
     }
 
-    public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options)
+    public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options, Account account)
     {
+        if(account.Role != Role.Admin)
+            throw new UnauthorizedAccessException();
         var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Include(q => q.Quizes)
             .ToPagedAsync(options,
                 x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
@@ -164,9 +171,9 @@ public class QuizBankService : IQuizBankService
         };
     }
 
-    public QuizBankResponse GetById(int id)
+    public async Task<QuizBankResponse> GetById(int id)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
@@ -177,6 +184,30 @@ public class QuizBankService : IQuizBankService
             .Where(q => q.Tags != null && q.Tags.Contains(tag))
             .ToPagedAsync(options,
                 x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+        return new PagedResponse<QuizBankResponse>
+        {
+            Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+            Metadata = quizBanks.Metadata
+        };
+    }
+    public async Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, Account account)
+    {
+        List<string> subjects = new List<string>
+        {
+            "Math",
+            "Literature",
+            "Science",
+            "Language",
+            "Computer",
+            "Geography"
+        };
+        var decodedSearch = HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower();
+
+        var quizBanks = await _context.QuizBanks
+            .Include(c => c.Quizes)
+            .Include(c => c.Author)
+            .Where(q => q.Tags != null && !subjects.Any(s => q.Tags.Contains(s)))
+            .ToPagedAsync(options, x => x.BankName.ToLower().Contains(decodedSearch));
         return new PagedResponse<QuizBankResponse>
         {
             Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
@@ -198,7 +229,7 @@ public class QuizBankService : IQuizBankService
 
     public async Task<ProgressResponse> GetProgress(int quizbankId, Account account)
     {
-        GetQuizBank(quizbankId);
+        await GetQuizBank(quizbankId);
         var progress =
             await _context.LearnedProgress.FirstOrDefaultAsync(p =>
                 p.QuizBankId == quizbankId && p.AccountId == account.Id);
@@ -210,15 +241,15 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<ProgressResponse>(progress);
     }
 
-    public IEnumerable<QuizBankResponse> GetRelated(int id)
+    public async Task<IEnumerable<QuizBankResponse>> GetRelated(int id)
     {
-        var relatedQuizBanks = HybridRecommendation(id, 1, 2, 70, 4);
+        var relatedQuizBanks = await HybridRecommendation(id, 1, 2, 70, 4);
         return _mapper.Map<IEnumerable<QuizBankResponse>>(relatedQuizBanks);
     }
 
-    private IEnumerable<QuizBank> GetRelatedByEmbedding(int id)
+    private async Task<IEnumerable<QuizBank>> GetRelatedByEmbedding(int id)
     {
-        var embedding = GetQuizBank(id).Embedding;
+        var embedding = (await GetQuizBank(id)).Embedding;
         if (embedding == null) return new List<QuizBank>();
 
         var relatedQuizBanks = _context.QuizBanks
@@ -236,14 +267,14 @@ public class QuizBankService : IQuizBankService
      * @param id quizbank id
      *
      */
-    private IEnumerable<QuizBank> HybridRecommendation(int id, float tagWeight = 1, float sematicWeight = 1,
+    private async Task<IEnumerable<QuizBank>> HybridRecommendation(int id, float tagWeight = 1, float sematicWeight = 1,
         int rrFK = 50, int take = 10)
     {
-        var tags = GetQuizBank(id).Tags ?? new List<string>();
-        var embedding = GetQuizBank(id).Embedding ?? new Vector(new float[768]);
+        var tags = (await GetQuizBank(id)).Tags ?? new List<string>();
+        var embedding = (await GetQuizBank(id)).Embedding ?? new Vector(new float[768]);
 
 
-        var tagRelatedQuizBanks = _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
+        var tagRelatedQuizBanks = await _context.QuizBanks.Include(q => q.Author).Include(q => q.Quizes)
             .Where(qb => qb.Tags != null && qb.Tags.Any(t => tags.Contains(t))).Take(take)
             .Include(qb => qb.Author)
             .Select(qb => new
@@ -251,8 +282,8 @@ public class QuizBankService : IQuizBankService
                 QuizBank = qb,
                 Score = 1.0 / (rrFK + tags.IndexOf(qb.Tags!.First())) * tagWeight
             })
-            .ToList();
-        var embeddingRelatedQuizBanks = _context.QuizBanks
+            .ToListAsync();
+        var embeddingRelatedQuizBanks = await _context.QuizBanks
             .Where(qb => qb.Embedding != null && qb.Id != id)
             .OrderBy(qb => qb.Embedding!.CosineDistance(embedding))
             .Include(qb => qb.Author)
@@ -264,7 +295,7 @@ public class QuizBankService : IQuizBankService
                 // score by distance
                 Score = 1.0 / (rrFK +( qb.Embedding != null ? qb.Embedding!.CosineDistance(embedding) : 1)) * sematicWeight
             })
-            .ToList();
+            .ToListAsync();
         var relatedQuizBanks = tagRelatedQuizBanks.Concat(embeddingRelatedQuizBanks).GroupBy(x => x.QuizBank)
             .Select(x => new
             {
@@ -279,9 +310,9 @@ public class QuizBankService : IQuizBankService
         return relatedQuizBanks;
     }
 
-    public QuizBankResponse Rating(int id, Account account, int rating)
+    public async Task<QuizBankResponse> Rating(int id, Account account, int rating)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         if (quizBank.Rating == null)
         {
             quizBank.Rating = new List<Rating>();
@@ -298,7 +329,7 @@ public class QuizBankService : IQuizBankService
     public async Task<ProgressResponse> SaveProgress(int quizbankId, Account account,
         SaveProgressRequest saveProgressRequest)
     {
-        GetQuizBank(quizbankId);
+        await GetQuizBank(quizbankId);
         var progress =
             await _context.LearnedProgress.FirstOrDefaultAsync(p =>
                 p.QuizBankId == quizbankId && p.AccountId == account.Id);
@@ -327,9 +358,9 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<ProgressResponse>(progress);
     }
 
-    public QuizBankResponse Update(int id, QuizBankUpdate model, Account currentUser)
+    public async Task<QuizBankResponse> Update(int id, QuizBankUpdate model, Account currentUser)
     {
-        var quizBank = GetQuizBank(id);
+        var quizBank = await GetQuizBank(id);
         if (currentUser.Id != quizBank.Author.Id) throw new UnauthorizedAccessException();
 
         _mapper.Map(model, quizBank);
@@ -341,10 +372,10 @@ public class QuizBankService : IQuizBankService
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public QuizBankResponse UpdateQuiz(int id, int quizId, QuizUpdate model, Account account)
+    public async Task<QuizBankResponse> UpdateQuiz(int id, int quizId, QuizUpdate model, Account account)
     {
-        var quizBank = GetQuizBank(id);
-        if (account.Id != quizBank.Author.Id) throw new UnauthorizedAccessException();
+        var quizBank = await GetQuizBank(id);
+        if (account.Id != 0) throw new UnauthorizedAccessException();
 
         var quiz = quizBank.Quizes.FirstOrDefault(x => x.Id == quizId);
         if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
@@ -352,13 +383,13 @@ public class QuizBankService : IQuizBankService
         quiz.Updated = DateTime.UtcNow;
         quizBank.Updated = DateTime.UtcNow;
         _context.SaveChanges();
-BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id)); 
+        BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id)); 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    private QuizBank GetQuizBank(int id)
+    private async Task<QuizBank> GetQuizBank(int id)
     {
-        var quizBank = _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefault(i => i.Id == id);
+        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id);
         if (quizBank == null) throw new KeyNotFoundException("Not found QuizBank");
         return quizBank;
     }

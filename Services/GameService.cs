@@ -187,9 +187,21 @@ namespace fuquizlearn_api.Services
             var games = await _context.Games.Where(g => g.ClassroomId == classroomId)
             .ToPagedAsync(option,
                 g => g.GameName.ToLower().Contains(HttpUtility.UrlDecode(option.Search, Encoding.ASCII).ToLower()));
+            var gamesUpdate = games.Data.ToList();
+            for(int i = 0; i < gamesUpdate.Count; i++)
+            {
+                var game = gamesUpdate[i];
+                if (AutoUpdateGameStatus(ref game))
+                {
+                    _context.Games.Update(game);
+                    await _context.SaveChangesAsync();
+                    gamesUpdate[i] = game;
+                }
+
+            }
             return new PagedResponse<GameResponse>
             {
-                Data = _mapper.Map<List<GameResponse>>(games.Data),
+                Data = _mapper.Map<List<GameResponse>>(gamesUpdate),
                 Metadata = games.Metadata
             };
         }
