@@ -166,7 +166,9 @@ namespace fuquizlearn_api.Services
                 throw new AppException("Game is not started or has been ended");
             }
 
-            game.Status = GameStatus.OnGoing;
+            game.Status = GameStatus.Ended;
+            game.EndTime = DateTime.UtcNow;
+            _context.Games.Update(game);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<GameResponse>(game);
