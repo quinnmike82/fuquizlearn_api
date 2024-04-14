@@ -9,7 +9,6 @@ namespace fuquizlearn_api.GameSocket
     [Authorize]
     public class GameSocket : Hub
     {
-        private Account Account;
         private readonly IGameService _gameService;
         private readonly IAccountService _accountService;
 
@@ -26,28 +25,31 @@ namespace fuquizlearn_api.GameSocket
             {
                 throw new HubException("Email not found");
             }
-            this.Account = _accountService.GetByEmail(email);
+            Context.Items["Account"] = _accountService.GetByEmail(email);
             return base.OnConnectedAsync();
         }
 
         public async Task JoinGame(int gameId)
         {
-            await _gameService.Join(gameId, Account);
+            var account = (Account)Context.Items["Account"];
+            await _gameService.Join(gameId, account);
             await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
-            var firstQuiz = await _gameService.GetQuizByCurrentQuizId(gameId, Account);
+            var firstQuiz = await _gameService.GetQuizByCurrentQuizId(gameId, account);
             await Clients.Client(Context.ConnectionId).SendAsync("Joined Success", firstQuiz);
         }
 
         public async Task AddAnswerHistory(AnswerHistoryRequest answerHistoryRequest)
         {
-            var result = await _gameService.AddAnswerHistory(answerHistoryRequest, Account);
-            var nextQuiz = await _gameService.GetQuizByCurrentQuizId(answerHistoryRequest.GameId, Account, answerHistoryRequest.QuizId);
+            var account = (Account)Context.Items["Account"];
+            var result = await _gameService.AddAnswerHistory(answerHistoryRequest, account);
+            var nextQuiz = await _gameService.GetQuizByCurrentQuizId(answerHistoryRequest.GameId, account, answerHistoryRequest.QuizId);
             await Clients.Client(Context.ConnectionId).SendAsync("Answer Result", result, nextQuiz);
         }
 
         public async Task GetQuizes(int gameId, int currentQuizId)
         {
-            var result = await _gameService.GetQuizByCurrentQuizId(gameId, Account, currentQuizId);
+            var account = (Account)Context.Items["Account"];
+            var result = await _gameService.GetQuizByCurrentQuizId(gameId, account, currentQuizId);
             await Clients.Client(Context.ConnectionId).SendAsync("Get Quizes", result);
         }
 
