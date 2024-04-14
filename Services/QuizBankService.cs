@@ -392,7 +392,7 @@ public class QuizBankService : IQuizBankService
 
     private async Task<QuizBank> GetQuizBank(int id)
     {
-        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstAsync(i => i.Id == id);
+        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id);
         if (quizBank == null) throw new KeyNotFoundException("Not found QuizBank");
         return quizBank;
     }
