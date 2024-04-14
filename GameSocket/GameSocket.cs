@@ -18,15 +18,15 @@ namespace fuquizlearn_api.GameSocket
             _accountService = accountService;
         }
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             var email = Context.User?.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
             if (email == null)
             {
                 throw new HubException("Email not found");
             }
-            Context.Items["Account"] = _accountService.GetByEmail(email);
-            return base.OnConnectedAsync();
+            Context.Items["Account"] = await _accountService.GetByEmail(email);
+            await base.OnConnectedAsync();
         }
 
         public async Task JoinGame(int gameId)
