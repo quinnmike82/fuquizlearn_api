@@ -84,6 +84,7 @@ namespace fuquizlearn_api.Services
             {
                 isCorrect = isCorrect && gameQuiz.CorrectAnswers[i].Equals(answerHistoryRequest.UserAnswer[i]);
             }
+            answerHistory.IsCorrect = isCorrect;
             _context.AnswerHistories.Update(answerHistory);
             await _context.SaveChangesAsync();
 
@@ -409,7 +410,7 @@ namespace fuquizlearn_api.Services
 
             if (gameRecord != null)
             {
-                throw new AppException("User already joined in the game");
+                //throw new AppException("User already joined in the game");
             }
             gameRecord = new GameRecord
             {
