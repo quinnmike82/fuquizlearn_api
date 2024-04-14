@@ -8,5 +8,6 @@
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public Account? Owner { get; set; }
         public string Reason { get; set; }
+        public bool IsActive { get; set; }
     }
 }

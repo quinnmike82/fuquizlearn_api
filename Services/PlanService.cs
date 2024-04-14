@@ -84,7 +84,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PlanAccount> CheckCurrent(Account account)
         {
-            return await _context.PlanAccounts.Include(c => c.Plan).Include(c => c.Account).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
+            return await _context.PlanAccounts.Include(c => c.Plan).Include(c => c.Account).Include(c => c.Plan).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
         }
 
         public async Task<bool> CheckPurchase(string transactionId)

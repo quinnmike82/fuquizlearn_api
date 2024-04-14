@@ -136,7 +136,7 @@ namespace fuquizlearn_api.Services
             game.GameQuizs = GetRandomQuizFormQuizbank(quizBank, gameCreate.Amount, game.Id, gameCreate.QuizTypes);
             _context.Games.Update(game);
             await _context.SaveChangesAsync();
-            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Informnation", "create_game", classroom.Classname);
+            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Information", "create_game", classroom.Classname);
             return _mapper.Map<GameResponse>(game);
         }
 
