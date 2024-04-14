@@ -453,7 +453,7 @@ namespace fuquizlearn_api.Services
             var members = await _context.ClassroomsMembers.Include(cm => cm.Account).Include(cm => cm.Classroom)
                                                     .Where(cm => cm.ClassroomId == id)
                                                     .ToPagedAsync(options,
-                                                    mb => mb.Account.FullName.ToLower().Equals(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+                                                    mb => mb.Account.FullName.ToLower().Contains(HttpUtility.UrlDecode(options.Search.ToLower(), Encoding.ASCII).ToLower()));
             return new PagedResponse<ClassroomMemberResponse>
             {
                 Data = _mapper.Map<List<ClassroomMemberResponse>>(members.Data),
