@@ -14,13 +14,13 @@ namespace fuquizlearn_api.Services
 {
     public interface IQuizService
     {
-        List<Quiz> GetAll(int bankId); // this should not be used in user
+        Task<List<Quiz>> GetAll(int bankId); // this should not be used in user
         Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options);
-        QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
-        QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
+        Task<QuizResponse> AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
+        Task<QuizResponse> UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
         Task<QuizResponse> GetQuizById(int quizId);
-        QuizResponse UpdateQuiz(int quizId, QuizUpdate model); 
-        void DeleteQuizInBank(int bankId, int quizId, Account account);
+        Task<QuizResponse> UpdateQuiz(int quizId, QuizUpdate model);
+        Task DeleteQuizInBank(int bankId, int quizId, Account account);
     }
 
     public class QuizService : IQuizService
@@ -35,13 +35,13 @@ namespace fuquizlearn_api.Services
             _mapper = mapper;
         }
 
-        public List<Quiz> GetAll(int bankId)
+        public async Task<List<Quiz>> GetAll(int bankId)
         {
-                var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId).ToList();
+                var quizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToListAsync();
                 return quizes ?? throw new KeyNotFoundException("Could not find the quiz");
         }
 
-        public QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId)
+        public async Task<QuizResponse> AddQuizInBank(Account currentUser, QuizCreate model, int bankId)
         {
             CheckQuizBank(bankId, currentUser);
 
@@ -50,7 +50,7 @@ namespace fuquizlearn_api.Services
             quiz.Created = DateTime.UtcNow;
 
             _context.Quizes.Add(quiz);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return _mapper.Map<QuizResponse>(quiz);
         }
 
@@ -61,22 +61,22 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<QuizResponse>(quiz);     
         }
 
-        public QuizResponse UpdateQuiz(int quizId, QuizUpdate model)
+        public async Task<QuizResponse> UpdateQuiz(int quizId, QuizUpdate model)
         {
-            var quiz = _context.Quizes.Find(quizId);
+            var quiz = await _context.Quizes.FindAsync(quizId);
             if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
             _mapper.Map(model, quiz);
             quiz.Updated = DateTime.UtcNow;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return _mapper.Map<QuizResponse>(quiz); 
         }
 
-        public void DeleteQuizInBank(int bankId, int quizId, Account account)
+        public async Task DeleteQuizInBank(int bankId, int quizId, Account account)
         {
-            CheckQuizBank(bankId, account);
-            var quiz = GetQuiz(bankId, quizId);
+            await CheckQuizBank(bankId, account);
+            var quiz = await GetQuiz(bankId, quizId);
             _context.Quizes.Remove(quiz);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser,
@@ -102,17 +102,16 @@ namespace fuquizlearn_api.Services
             };
         }
 
-        public QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser)
+        public async Task<QuizResponse> UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser)
         {
-            CheckQuizBank(bankId, currentUser);
+            await CheckQuizBank(bankId, currentUser);
 
-            var quiz = GetQuiz(bankId, quizId);
+            var quiz = await GetQuiz(bankId, quizId);
             _mapper.Map(model, quiz);
             quiz.Updated = DateTime.UtcNow;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return _mapper.Map<QuizResponse>(quiz);
-            ;
         }
 
         private async Task<QuizBank> CheckQuizBank(int bankId, Account currentUser)
@@ -134,9 +133,9 @@ namespace fuquizlearn_api.Services
             throw new UnauthorizedAccessException();
         }
 
-        private Quiz GetQuiz(int bankId, int quizId)
+        private async Task<Quiz> GetQuiz(int bankId, int quizId)
         {
-            var quiz = _context.Quizes.FirstOrDefault(x => x.Id == quizId && x.QuizBankId == bankId);
+            var quiz = await _context.Quizes.FirstOrDefaultAsync(x => x.Id == quizId && x.QuizBankId == bankId);
             if (quiz == null)
             {
                 throw new KeyNotFoundException("Could not find the quiz");
