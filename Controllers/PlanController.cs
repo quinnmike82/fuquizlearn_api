@@ -32,9 +32,9 @@ namespace fuquizlearn_api.Controllers
                 var newPlan = await _planService.RegisterPlan(id, transactionId, Account);
                 return Ok(newPlan);
         }
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet]
-        public async Task<IActionResult> GetAllPlans()
+        public async Task<ActionResult<List<PlanResponse>>> GetAllPlans()
         {
                 var plans = await _planService.GetAllPlan(Account);
                 return Ok(plans);
