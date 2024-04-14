@@ -44,7 +44,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
             var _geminiAIService = scope.ServiceProvider.GetRequiredService<IGeminiAIService>();
 
             var quizbank = await _quizBankService.GetById(quizBankId);
-            var quizzes = _quizService.GetAll(quizBankId);
+            var quizzes = await _quizService.GetAll(quizBankId);
             var quizbankEmbeddingReponse = await EmbeddingQuizbank(quizbank, quizzes, _geminiAIService);
 
             if (quizbankEmbeddingReponse != null)
