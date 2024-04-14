@@ -17,7 +17,7 @@ namespace fuquizlearn_api.Services
         Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser, QuizPagedRequest options);
         QuizResponse AddQuizInBank(Account currentUser, QuizCreate model, int bankId);
         QuizResponse UpdateQuizInBank(int bankId, int quizId, QuizUpdate model, Account currentUser);
-        QuizResponse GetQuizById(int quizId);
+        Task<QuizResponse> GetQuizById(int quizId);
         QuizResponse UpdateQuiz(int quizId, QuizUpdate model); 
         void DeleteQuizInBank(int bankId, int quizId, Account account);
     }
@@ -53,9 +53,9 @@ namespace fuquizlearn_api.Services
             return _mapper.Map<QuizResponse>(quiz);
         }
 
-        public QuizResponse GetQuizById(int quizId)
+        public async Task<QuizResponse> GetQuizById(int quizId)
         {
-            var quiz = _context.Quizes.Find(quizId);    
+            var quiz = await _context.Quizes.FindAsync(quizId);    
             if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
             return _mapper.Map<QuizResponse>(quiz);     
         }
@@ -81,7 +81,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<QuizResponse>> GetAllQuizFromBank(int bankId, Account currentUser,
             QuizPagedRequest options)
         {
-            CheckQuizBank(bankId, currentUser);
+            await CheckQuizBank(bankId, currentUser);
             if (options.IsGetAll)
             {
                 var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId).ToList();
@@ -114,9 +114,9 @@ namespace fuquizlearn_api.Services
             ;
         }
 
-        private QuizBank CheckQuizBank(int bankId, Account currentUser)
+        private async Task<QuizBank> CheckQuizBank(int bankId, Account currentUser)
         {
-            var quizBank = _context.QuizBanks.Find(bankId);
+            var quizBank = await _context.QuizBanks.FindAsync(bankId);
             if (quizBank == null) throw new KeyNotFoundException("Could not find quizbank");
             if (quizBank.Visibility == Visibility.Public)
             {

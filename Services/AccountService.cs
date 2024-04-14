@@ -39,9 +39,11 @@ public interface IAccountService
     AccountResponse Create(CreateRequest model);
     AccountResponse Update(int id, UpdateRequest model);
     void Delete(int id);
-    void BanAccount(int id, string origin);
-    void UnbanAccount(int id, string origin);
+    void BanAccount(int id, string origin, Account account);
+    void UnbanAccount(int id, string origin, Account account);
+    void WarningAccount(int id, string origin, Account account);
     void WarningAccount(int id, string origin);
+
 
     Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options);
 
@@ -370,8 +372,10 @@ public class AccountService : IAccountService
         _context.SaveChanges();
     }
 
-    public void BanAccount(int accountId, string origin)
+    public void BanAccount(int accountId, string origin, Account ad)
     {
+        if (ad.Role != Role.Admin)
+            throw new UnauthorizedAccessException();
         var account = getAccount(accountId);
 
         // Update the database to mark the account as banned
@@ -383,6 +387,20 @@ public class AccountService : IAccountService
         SendBanEmail(account, origin);
     }
 
+    public void WarningAccount(int accountId, string origin, Account ad)
+    {
+        if (ad.Role != Role.Admin)
+            throw new UnauthorizedAccessException();
+        var account = getAccount(accountId);
+
+        // Update the database to mark the account with a warning
+        account.isWarning = DateTime.UtcNow;
+        _context.Accounts.Update(account);
+        _context.SaveChanges();
+        _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
+        // Send the warning email
+        SendWarningEmail(account, origin);
+    }
     public void WarningAccount(int accountId, string origin)
     {
         var account = getAccount(accountId);
@@ -664,8 +682,10 @@ public class AccountService : IAccountService
         return _mapper.Map<AccountResponse>(entity);
     }
 
-    public void UnbanAccount(int id, string origin)
+    public void UnbanAccount(int id, string origin, Account ad)
     {
+        if (ad.Role != Role.Admin)
+            throw new UnauthorizedAccessException();
         var account = getAccount(id);
 
         // Update the database to mark the account as banned
