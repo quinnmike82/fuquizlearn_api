@@ -6,6 +6,7 @@ using fuquizlearn_api.Helpers;
 using fuquizlearn_api.Models.Quiz;
 using fuquizlearn_api.Models.Request;
 using fuquizlearn_api.Models.Response;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Web;
 
@@ -84,7 +85,7 @@ namespace fuquizlearn_api.Services
             await CheckQuizBank(bankId, currentUser);
             if (options.IsGetAll)
             {
-                var quizes = _context.Quizes.Where(q => q.QuizBankId == bankId).ToList();
+                var quizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToListAsync();
                 return new PagedResponse<QuizResponse>
                 {
                     Data = _mapper.Map<IEnumerable<QuizResponse>>(quizes),
