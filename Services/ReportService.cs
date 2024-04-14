@@ -61,7 +61,7 @@ namespace fuquizlearn_api.Services
         {
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account).ToPagedAsync(options,
+            var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
    q => q.Reason.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<ReportResponse>
             {
@@ -79,18 +79,28 @@ namespace fuquizlearn_api.Services
             {
                 throw new KeyNotFoundException(nameof(report));
             }
+            if(report.IsActive)
+            {
+                throw new AppException("Report is already Actived");
+            }
+            else
+            {
+                report.IsActive = true;
+                _context.Reports.Update(report);
+                await _context.SaveChangesAsync();
+            }
             if (report.Account == null)
             {
                 var quizbank = await _context.QuizBanks.Include(c =>c.Author).FirstOrDefaultAsync(c => c.Id == report.QuizBank.Id);
                 _context.QuizBanks.Remove(quizbank);
                 await _context.SaveChangesAsync();
                 await _notificationService.NotificationTrigger(new List<int> { quizbank.Author.Id }, "Warning" ,"deleted_quizbank", quizbank.BankName);
-                _accountService.WarningAccount(quizbank.Author.Id, string.Empty);
+                await _accountService.WarningAccount(quizbank.Author.Id, string.Empty);
             }
             else
             {
                 await _notificationService.NotificationTrigger(new List<int> { report.Account.Id }, "Warning", "reported", string.Empty);
-                _accountService.WarningAccount(report.Account.Id, string.Empty);
+                await _accountService.WarningAccount(report.Account.Id, string.Empty);
             }
         }
     }

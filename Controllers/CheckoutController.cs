@@ -17,12 +17,14 @@ namespace fuquizlearn_api.Controllers
         private readonly IHelperFrontEnd _frontEnd;
         private readonly ITransactionService _transactionService;
         private readonly IPlanService _planService;
-        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService, IPlanService planService)
+        private readonly INotificationService _notificationService;
+        public CheckoutController(IConfiguration configuration, IHelperFrontEnd frontEnd, ITransactionService transactionService, IPlanService planService, INotificationService notificationService)
         {
             _configuration = configuration;
             _frontEnd = frontEnd;
             _transactionService = transactionService;
             _planService = planService;
+            _notificationService = notificationService;
         }
 
         [HttpPost]
@@ -97,9 +99,11 @@ namespace fuquizlearn_api.Controllers
                 TransactionId = session.SubscriptionId,
                 TransactionType = session.PaymentMethodCollection,
             };
+            var plan = await _planService.GetById(int.Parse(sub.Items.Data[0].Plan.ProductId));
 
             await _transactionService.CreateTransaction(trans, Account);
-            await _planService.RegisterPlan(int.Parse(sub.Items.Data[0].Plan.ProductId), trans.TransactionId, Account);
+            await _planService.RegisterPlan(plan.Id, trans.TransactionId, Account);
+            await _notificationService.NotificationTrigger(new List<int> { Account.Id }, "Payment", "subcribe_plan", plan.Title);
 
 
             return Ok();
@@ -115,6 +119,7 @@ namespace fuquizlearn_api.Controllers
                 var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = true };
                 var service = new SubscriptionService();
                 await service.UpdateAsync(check.TransactionId, options);
+                await _notificationService.NotificationTrigger(new List<int> { Account.Id }, "Payment", "cancel_plan", check.Plan.Title);
                 return Ok();
             }
             else return BadRequest("No Plan currently");

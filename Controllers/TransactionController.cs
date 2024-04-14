@@ -21,6 +21,11 @@ namespace fuquizlearn_api.Controllers
         {
             return await _transactionService.GetAllTransaction(options, month, Account);
         }
+        [HttpGet]
+        public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll( [FromQuery] PagedRequest options)
+        {
+            return await _transactionService.GetAllTransaction(options, Account);
+        }
         [HttpGet("getbyyear/{year:int}")]
         public async Task<ActionResult<List<ChartTransaction>>> GetChart(int year) { 
             return await _transactionService.GetByYear(year, Account);

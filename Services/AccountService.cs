@@ -23,26 +23,26 @@ namespace fuquizlearn_api.Services;
 
 public interface IAccountService
 {
-    AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress);
+    Task<AuthenticateResponse> Authenticate(AuthenticateRequest model, string ipAddress);
     Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress);
-    AuthenticateResponse RefreshToken(string token, string ipAddress);
-    void RevokeToken(string token, string ipAddress);
+    Task<AuthenticateResponse> RefreshToken(string token, string ipAddress);
+    Task RevokeToken(string token, string ipAddress);
     string IssueForgotPasswordToken(Account account);
     bool ValidateResetToken(string token, Account account);
-    void Register(RegisterRequest model);
-    void VerifyEmail(string email, string token);
-    string ForgotPassword(ForgotPasswordRequest model, string origin);
-    void ResetPassword(ResetPasswordRequest model);
-    Account GetByEmail(string email);
+    Task Register(RegisterRequest model);
+    Task VerifyEmail(string email, string token);
+    Task<string> ForgotPassword(ForgotPasswordRequest model, string origin);
+    Task ResetPassword(ResetPasswordRequest model);
+    Task<Account> GetByEmail(string email);
     Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options);
-    AccountResponse GetById(int id);
-    AccountResponse Create(CreateRequest model);
-    AccountResponse Update(int id, UpdateRequest model);
-    void Delete(int id);
-    void BanAccount(int id, string origin, Account account);
-    void UnbanAccount(int id, string origin, Account account);
-    void WarningAccount(int id, string origin, Account account);
-    void WarningAccount(int id, string origin);
+    Task<AccountResponse> GetById(int id);
+    Task<AccountResponse> Create(CreateRequest model);
+    Task<AccountResponse> Update(int id, UpdateRequest model);
+    Task Delete(int id);
+    Task BanAccount(int id, string origin, Account account);
+    Task UnbanAccount(int id, string origin, Account account);
+    Task WarningAccount(int id, string origin, Account account);
+    Task WarningAccount(int id, string origin);
 
 
     Task<PagedResponse<AdminAccountResponse>> GetBannedAccount(PagedRequest options);
@@ -91,10 +91,10 @@ public class AccountService : IAccountService
         _notificationService = notificationService;
     }
 
-    public AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress)
+    public async Task<AuthenticateResponse> Authenticate(AuthenticateRequest model, string ipAddress)
     {
         var account =
-            _context.Accounts.FirstOrDefault(x =>
+            await _context.Accounts.FirstOrDefaultAsync(x =>
                 x.Email == model.EmailOrUsername || x.Username == model.EmailOrUsername);
 
         // validate
@@ -117,7 +117,7 @@ public class AccountService : IAccountService
 
         // save changes to db
         _context.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         var response = _mapper.Map<AuthenticateResponse>(account);
         response.AccessToken = new Token
@@ -136,7 +136,7 @@ public class AccountService : IAccountService
     public async Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress)
     {
         var email = await _googleService.GetEmailByToken(model.Token) ?? throw new AppException("Email is invalid");
-        var account = GetByEmail(email) ?? throw new AppException("Account not found");
+        var account = await GetByEmail(email) ?? throw new AppException("Account not found");
 
         // authentication successful so generate jwt and refresh tokens
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
@@ -154,7 +154,7 @@ public class AccountService : IAccountService
 
         // save changes to db
         _context.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         var response = _mapper.Map<AuthenticateResponse>(account);
         response.AccessToken = new Token
@@ -170,9 +170,9 @@ public class AccountService : IAccountService
         return response;
     }
 
-    public AuthenticateResponse RefreshToken(string token, string ipAddress)
+    public async Task<AuthenticateResponse> RefreshToken(string token, string ipAddress)
     {
-        var account = getAccountByRefreshToken(token);
+        var account = await getAccountByRefreshToken(token);
         var refreshToken = account.RefreshTokens.Single(x => x.Token == token);
 
         if (refreshToken.IsRevoked)
@@ -197,7 +197,7 @@ public class AccountService : IAccountService
 
         // save changes to db
         _context.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         // generate new jwt
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
@@ -220,9 +220,9 @@ public class AccountService : IAccountService
         return response;
     }
 
-    public void RevokeToken(string token, string ipAddress)
+    public async Task RevokeToken(string token, string ipAddress)
     {
-        var account = getAccountByRefreshToken(token);
+        var account = await getAccountByRefreshToken(token);
         var refreshToken = account.RefreshTokens.Single(x => x.Token == token);
 
         if (!refreshToken.IsActive)
@@ -231,10 +231,10 @@ public class AccountService : IAccountService
         // revoke token and save
         revokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");
         _context.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
-    public void VerifyEmail(string email, string token)
+    public async Task VerifyEmail(string email, string token)
     {
         var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token && x.Email == email);
 
@@ -245,7 +245,7 @@ public class AccountService : IAccountService
         account.VerificationToken = null;
 
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
     public string IssueForgotPasswordToken(Account account)
@@ -261,9 +261,9 @@ public class AccountService : IAccountService
         return token;
     }
 
-    public string ForgotPassword(ForgotPasswordRequest model, string origin)
+    public async Task<string> ForgotPassword(ForgotPasswordRequest model, string origin)
     {
-        var account = _context.Accounts.SingleOrDefault(x => x.Email == model.Email);
+        var account = await _context.Accounts.SingleOrDefaultAsync(x => x.Email == model.Email);
 
         // always return ok response to prevent email enumeration
         if (account == null) throw new AppException("account-fail");
@@ -273,7 +273,7 @@ public class AccountService : IAccountService
         account.ResetToken = hashedPin;
         account.ResetTokenExpires = DateTime.UtcNow.AddDays(1);
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         var redirect = _helperFrontEnd.GetUrl("/forgot/verify?t=" + token);
         // send email
         sendPasswordResetEmail(account, generatePin, redirect);
@@ -287,11 +287,11 @@ public class AccountService : IAccountService
         return isTokenMatch;
     }
 
-    public void ResetPassword(ResetPasswordRequest model)
+    public async Task ResetPassword(ResetPasswordRequest model)
     {
         var claims = _helperEncryptService.JwtDecrypt(_appSettings.ForgotPasswordSecret, model.Token);
         var email = claims.Claims.First(claim => claim.Type == "email").Value;
-        var account = _context.Accounts.FirstOrDefault(account => account.Email == email);
+        var account = await _context.Accounts.FirstOrDefaultAsync(account => account.Email == email);
         if (account == null) throw new AppException("account-fail");
         if (account.ResetToken == null) throw new AppException("token-expire");
         // update password and remove reset token
@@ -301,7 +301,7 @@ public class AccountService : IAccountService
         account.ResetTokenExpires = null;
 
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
     public async Task<PagedResponse<AdminAccountResponse>> GetAll(PagedRequest options)
@@ -315,18 +315,18 @@ public class AccountService : IAccountService
         };
     }
 
-    public AccountResponse GetById(int id)
+    public async Task<AccountResponse> GetById(int id)
     {
-        var account = getAccount(id);
+        var account = await getAccount(id);
         return _mapper.Map<AccountResponse>(account);
     }
 
-    public AccountResponse Create(CreateRequest model)
+    public async Task<AccountResponse> Create(CreateRequest model)
     {
         // validate
-        if (_context.Accounts.Any(x => x.Email == model.Email))
+        if (await _context.Accounts.AnyAsync(x => x.Email == model.Email))
             throw new AppException($"Email '{model.Email}' is already registered");
-        if (_context.Accounts.Any(x => x.Username == model.Username))
+        if (await _context.Accounts.AnyAsync(x => x.Username == model.Username))
             throw new AppException($"Username '{model.Username}' is already registered");
 
         // map model to new account object
@@ -339,14 +339,14 @@ public class AccountService : IAccountService
 
         // save account
         _context.Accounts.Add(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<AccountResponse>(account);
     }
 
-    public AccountResponse Update(int id, UpdateRequest model)
+    public async Task<AccountResponse> Update(int id, UpdateRequest model)
     {
-        var account = getAccount(id);
+        var account = await getAccount(id);
 
         // validate
         if (account.Email != model.Email && _context.Accounts.Any(x => x.Email == model.Email))
@@ -360,72 +360,72 @@ public class AccountService : IAccountService
         _mapper.Map(model, account);
         account.Updated = DateTime.UtcNow;
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<AccountResponse>(account);
     }
 
-    public void Delete(int id)
+    public async Task Delete(int id)
     {
-        var account = getAccount(id);
+        var account = await getAccount(id);
         _context.Accounts.Remove(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
-    public void BanAccount(int accountId, string origin, Account ad)
+    public async Task BanAccount(int accountId, string origin, Account ad)
     {
         if (ad.Role != Role.Admin)
             throw new UnauthorizedAccessException();
-        var account = getAccount(accountId);
+        var account =await getAccount(accountId);
 
         // Update the database to mark the account as banned
         account.isBan = DateTime.UtcNow;
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         // Send the ban email
         SendBanEmail(account, origin);
     }
 
-    public void WarningAccount(int accountId, string origin, Account ad)
+    public async Task WarningAccount(int accountId, string origin, Account ad)
     {
         if (ad.Role != Role.Admin)
             throw new UnauthorizedAccessException();
-        var account = getAccount(accountId);
+        var account = await getAccount(accountId);
 
         // Update the database to mark the account with a warning
         account.isWarning = DateTime.UtcNow;
         _context.Accounts.Update(account);
-        _context.SaveChanges();
-        _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
+        await _context.SaveChangesAsync();
+        await _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
         // Send the warning email
         SendWarningEmail(account, origin);
     }
-    public void WarningAccount(int accountId, string origin)
+    public async Task WarningAccount(int accountId, string origin)
     {
-        var account = getAccount(accountId);
+        var account = await getAccount(accountId);
 
         // Update the database to mark the account with a warning
         account.isWarning = DateTime.UtcNow;
         _context.Accounts.Update(account);
-        _context.SaveChanges();
-        _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
+        await _context.SaveChangesAsync();
+        await _notificationService.NotificationTrigger(new List<int> { accountId }, "Warning", "reported", string.Empty);
         // Send the warning email
         SendWarningEmail(account, origin);
     }
 
-    public Account GetByEmail(string email)
+    public async Task<Account> GetByEmail(string email)
     {
-        var account = _context.Accounts.FirstOrDefault(x => x.Email == email);
+        var account = await _context.Accounts.FirstOrDefaultAsync(x => x.Email == email);
         return account ?? throw new KeyNotFoundException("Account not found");
     }
 
-    public void Register(RegisterRequest model)
+    public async Task Register(RegisterRequest model)
     {
         // validate
-        if (_context.Accounts.Any(x => x.Email == model.Email)) throw new AppException("email-existed");
+        if (await _context.Accounts.AnyAsync(x => x.Email == model.Email)) throw new AppException("email-existed");
 
-        if (_context.Accounts.Any(x => x.Username == model.Username)) throw new AppException("username-existed");
+        if (await _context.Accounts.AnyAsync(x => x.Username == model.Username)) throw new AppException("username-existed");
 
         // map model to new account object
         var account = _mapper.Map<Account>(model);
@@ -447,23 +447,23 @@ public class AccountService : IAccountService
 
     // helper methods
 
-    private Account getAccount(int id)
+    private async Task<Account> getAccount(int id)
     {
-        var account = _context.Accounts.Find(id);
+        var account = await _context.Accounts.FindAsync(id);
         if (account == null) throw new KeyNotFoundException("Account not found");
         return account;
     }
 
-    private Account getAccountByRefreshToken(string token)
+    private async Task<Account> getAccountByRefreshToken(string token)
     {
-        var account = _context.Accounts.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
+        var account = await _context.Accounts.SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
         if (account == null) throw new AppException("Invalid token");
         return account;
     }
 
-    private Account getAccountByResetToken(string token)
+    private async Task<Account> getAccountByResetToken(string token)
     {
-        var account = _context.Accounts.SingleOrDefault(x =>
+        var account = await _context.Accounts.SingleOrDefaultAsync(x =>
             x.ResetToken == token && x.ResetTokenExpires > DateTime.UtcNow);
         if (account == null) throw new AppException("Invalid token");
         return account;
@@ -682,16 +682,16 @@ public class AccountService : IAccountService
         return _mapper.Map<AccountResponse>(entity);
     }
 
-    public void UnbanAccount(int id, string origin, Account ad)
+    public async Task UnbanAccount(int id, string origin, Account ad)
     {
         if (ad.Role != Role.Admin)
             throw new UnauthorizedAccessException();
-        var account = getAccount(id);
+        var account = await getAccount(id);
 
         // Update the database to mark the account as banned
         account.isBan = null;
         _context.Accounts.Update(account);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         // Send the ban email
         SendUnbanEmail(account, origin);

@@ -25,7 +25,7 @@ public interface IQuizBankService
     Task<QuizBankResponse> Create(Account currentUser, QuizBankCreate model);
     Task<QuizBankResponse> Update(int id, QuizBankUpdate model, Account currentUser);
     Task<QuizBankResponse> Update(int id, QuizBankUpdate model);
-    void Delete(int id, Account currentUser);
+    Task Delete(int id, Account currentUser);
     Task DeleteQuiz(int id, int quizId, Account account);
     Task<QuizBankResponse> UpdateQuiz(int id, int quizId, QuizUpdate model, Account account);
     Task<QuizBankResponse> AddQuiz(Account account, QuizCreate model, int id);
@@ -67,7 +67,7 @@ public class QuizBankService : IQuizBankService
 
         quizBank.Quizes.Add(quiz);
         quizBank.Updated = DateTime.UtcNow;
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
@@ -126,12 +126,12 @@ public class QuizBankService : IQuizBankService
         quizBank.Updated = DateTime.UtcNow;
 
         _context.QuizBanks.Update(quizBank);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
-    public async void Delete(int id, Account currentUser)
+    public async Task Delete(int id, Account currentUser)
     {
         var quizBank = await GetQuizBank(id);
         if (currentUser.Role != Role.Admin && currentUser.Id != quizBank.Author.Id)
@@ -139,7 +139,7 @@ public class QuizBankService : IQuizBankService
         if(currentUser.Role == Role.Admin)
             await _notificationService.NotificationTrigger(new List<int> { quizBank.Author.Id }, "Warning", "deleted_quizbank", quizBank.BankName);
         _context.QuizBanks.Remove(quizBank);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteQuiz(int id, int quizId, Account account)
@@ -154,7 +154,7 @@ public class QuizBankService : IQuizBankService
         quizBank.Updated = DateTime.UtcNow;
 
         _context.QuizBanks.Update(quizBank);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
     public async Task<PagedResponse<QuizBankResponse>> GetAll(PagedRequest options, Account account)
@@ -179,19 +179,6 @@ public class QuizBankService : IQuizBankService
 
     public async Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, string tag, Account account)
     {
-        var quizBanks = await _context.QuizBanks.Include(c => c.Quizes)
-            .Include(c => c.Author)
-            .Where(q => q.Tags != null && q.Tags.Contains(tag))
-            .ToPagedAsync(options,
-                x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
-        return new PagedResponse<QuizBankResponse>
-        {
-            Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
-            Metadata = quizBanks.Metadata
-        };
-    }
-    public async Task<PagedResponse<QuizBankResponse>> GetBySubject(PagedRequest options, Account account)
-    {
         List<string> subjects = new List<string>
         {
             "Math",
@@ -202,6 +189,35 @@ public class QuizBankService : IQuizBankService
             "Geography"
         };
         var decodedSearch = HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower();
+
+        if (tag.ToLower().Equals("other"))
+        {
+            var quizBanks = await _context.QuizBanks
+            .Include(c => c.Quizes)
+            .Include(c => c.Author)
+            .Where(q => q.Tags != null && !subjects.Any(s => q.Tags.Contains(s)))
+            .ToPagedAsync(options, x => x.BankName.ToLower().Contains(decodedSearch));
+            return new PagedResponse<QuizBankResponse>
+            {
+                Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+                Metadata = quizBanks.Metadata
+            };
+        }
+        else
+        {
+         var quizBanks = await _context.QuizBanks.Include(c => c.Quizes)
+                    .Include(c => c.Author)
+                    .Where(q => q.Tags != null && q.Tags.Contains(tag))
+                    .ToPagedAsync(options,
+                        x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+                return new PagedResponse<QuizBankResponse>
+                {
+                    Data = _mapper.Map<IEnumerable<QuizBankResponse>>(quizBanks.Data),
+                    Metadata = quizBanks.Metadata
+                };
+        }
+       
+    }
 
         var quizBanks = await _context.QuizBanks
             .Include(c => c.Quizes)
@@ -321,7 +337,7 @@ public class QuizBankService : IQuizBankService
         quizBank.Rating.RemoveAll(r => r.AccountId == account.Id);
         quizBank.Rating.Add(new Rating(account.Id, rating));
         _context.QuizBanks.Update(quizBank);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
@@ -367,7 +383,7 @@ public class QuizBankService : IQuizBankService
         quizBank.Updated = DateTime.UtcNow;
 
         _context.QuizBanks.Update(quizBank);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
@@ -382,14 +398,14 @@ public class QuizBankService : IQuizBankService
         _mapper.Map(model, quiz);
         quiz.Updated = DateTime.UtcNow;
         quizBank.Updated = DateTime.UtcNow;
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         BackgroundJob.Enqueue<IEmbeddingQueueService>(x => x.ProcessQueue(quizBank.Id)); 
         return _mapper.Map<QuizBankResponse>(quizBank);
     }
 
     private async Task<QuizBank> GetQuizBank(int id)
     {
-        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id);
+        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstAsync(i => i.Id == id);
         if (quizBank == null) throw new KeyNotFoundException("Not found QuizBank");
         return quizBank;
     }

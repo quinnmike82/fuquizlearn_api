@@ -13,5 +13,6 @@ namespace fuquizlearn_api.Models.Report
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public AccountResponse? Owner { get; set; }
         public string Reason { get; set; }
+        public bool IsActive { get; set; }
     }
 }

@@ -31,7 +31,7 @@ namespace fuquizlearn_api.Controllers
             return await _reportService.AddReport(report, Account);
         }
         [Authorize]
-        [HttpPost("verify{reportId}")]
+        [HttpPost("verify/{reportId}")]
         public async Task<IActionResult> VerifyReport(int reportId)
         {
             await _reportService.VerifyReport(reportId, Account);
