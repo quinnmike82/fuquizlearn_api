@@ -79,7 +79,7 @@ namespace fuquizlearn_api.Services
                 GameQuizId = answerHistoryRequest.QuizId
             };
             answerHistory.UserAnswer = answerHistoryRequest.UserAnswer;
-            var isCorrect = true;
+            var isCorrect = answerHistoryRequest.UserAnswer.Any();
             for (var i = 0; i < answerHistoryRequest.UserAnswer.Length; i++)
             {
                 isCorrect = isCorrect && gameQuiz.CorrectAnswers[i].Equals(answerHistoryRequest.UserAnswer[i]);
@@ -629,7 +629,6 @@ namespace fuquizlearn_api.Services
         {
             var game = await _context.Games.Include(g => g.QuizBank).ThenInclude(q => q.Author)
                                           .Include(g => g.Classroom).ThenInclude(c => c.Account)
-                                          .Include(g => g.GameQuizs)
                                           .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
@@ -648,22 +647,17 @@ namespace fuquizlearn_api.Services
                 throw new UnauthorizedAccessException("Unauthorized");
             }
 
+            GameQuiz? result = null;
             if (currentQuizId == null)
             {
-                return _mapper.Map<GameQuizResponse>(game.GameQuizs?.FirstOrDefault());
+                result = await _context.GameQuizs.Where(q => q.GameId == gameId).OrderBy(q => q.Id).FirstOrDefaultAsync();
+            }
+            else
+            {
+                result = await _context.GameQuizs.Where(q => q.GameId == gameId && q.Id == currentQuizId +1).FirstOrDefaultAsync();
             }
 
-            var currentIndex = game.GameQuizs.FindIndex(q => q.Id == currentQuizId);
-            if (currentIndex == -1)
-            {
-                throw new AppException($"Could not find quiz game with id {currentQuizId}");
-            }
-            if (currentIndex + 1 >= game.GameQuizs.Count)
-            {
-                return null;
-            }
-
-            return _mapper.Map<GameQuizResponse>(game.GameQuizs?[currentIndex + 1]);
+            return _mapper.Map<GameQuizResponse>(result);
         }
     }
 }
