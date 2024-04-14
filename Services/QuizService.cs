@@ -116,7 +116,7 @@ namespace fuquizlearn_api.Services
 
         private async Task<QuizBank> CheckQuizBank(int bankId, Account currentUser)
         {
-            var quizBank = await _context.QuizBanks.FindAsync(bankId);
+            var quizBank = await _context.QuizBanks.Include(c => c.Author).FirstOrDefaultAsync(c => c.Id == bankId);
             if (quizBank == null) throw new KeyNotFoundException("Could not find quizbank");
             if (quizBank.Visibility == Visibility.Public)
             {
