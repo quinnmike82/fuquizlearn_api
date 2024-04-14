@@ -17,6 +17,7 @@ namespace fuquizlearn_api.Services
         Task<TransactionResponse> CreateTransaction(TransactionCreate transactionCreate, Account account);
         Task<PagedResponse<TransactionResponse>> GetCurrentTransaction(PagedRequest options, Account account);
         Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options,int month, Account account);
+        Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account);
         Task<List<ChartTransaction>> GetByYear(int year, Account account);
     }
     public class TransactionService : ITransactionService
@@ -83,6 +84,22 @@ namespace fuquizlearn_api.Services
                 Metadata = trans.Metadata
             };
         }
+        
+        public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account)
+        {
+            if(account.Role != Role.Admin)
+                throw new UnauthorizedAccessException("Not Admin");
+            var trans = await _context.Transactions.Include(c => c.Account).OrderByDescending(c => c.Id)
+                                                     .ToPagedAsync(options,
+                x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
+
+            return new PagedResponse<TransactionResponse>
+            {
+                Data = _mapper.Map<IEnumerable<TransactionResponse>>(trans.Data),
+                Metadata = trans.Metadata
+            };
+        }
+
 
         public async Task<List<ChartTransaction>> GetByYear(int year, Account account)
         {

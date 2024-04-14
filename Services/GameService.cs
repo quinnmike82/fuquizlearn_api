@@ -84,6 +84,7 @@ namespace fuquizlearn_api.Services
             {
                 isCorrect = isCorrect && gameQuiz.CorrectAnswers[i].Equals(answerHistoryRequest.UserAnswer[i]);
             }
+            answerHistory.IsCorrect = isCorrect;
             _context.AnswerHistories.Update(answerHistory);
             await _context.SaveChangesAsync();
 
@@ -136,7 +137,7 @@ namespace fuquizlearn_api.Services
             game.GameQuizs = GetRandomQuizFormQuizbank(quizBank, gameCreate.Amount, game.Id, gameCreate.QuizTypes);
             _context.Games.Update(game);
             await _context.SaveChangesAsync();
-            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Informnation", "create_game", classroom.Classname);
+            await _notificationService.NotificationTrigger(classroom.AccountIds.ToList(), "Information", "create_game", classroom.Classname);
             return _mapper.Map<GameResponse>(game);
         }
 
@@ -409,7 +410,7 @@ namespace fuquizlearn_api.Services
 
             if (gameRecord != null)
             {
-                throw new AppException("User already joined in the game");
+                //throw new AppException("User already joined in the game");
             }
             gameRecord = new GameRecord
             {

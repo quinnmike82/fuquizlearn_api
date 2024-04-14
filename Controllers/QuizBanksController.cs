@@ -34,13 +34,6 @@ public class QuizBankController : BaseController
         var result = await _quizBankService.GetBySubject(options, tag, Account);
         return Ok(result);
     }
-    [AllowAnonymous]
-    [HttpGet("GetOther")]
-    public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetOther([FromQuery] PagedRequest options)
-    {
-        var result = await _quizBankService.GetBySubject(options, Account);
-        return Ok(result);
-    }
 
     [AllowAnonymous]
     [HttpGet("GetMyQuizBank")]
@@ -52,9 +45,9 @@ public class QuizBankController : BaseController
 
     [AllowAnonymous]
     [HttpGet("{id:int}")]
-    public ActionResult<QuizBankResponse> GetById(int id)
+    public async Task<ActionResult<QuizBankResponse>> GetById(int id)
     {
-        var result = _quizBankService.GetById(id);
+        var result = await _quizBankService.GetById(id);
         return Ok(result);
     }
 
@@ -68,25 +61,25 @@ public class QuizBankController : BaseController
 
     [Authorize]
     [HttpPut("{id:int}")]
-    public ActionResult<QuizBankResponse> Update(int id, QuizBankUpdate model)
+    public async Task<ActionResult<QuizBankResponse>> UpdateAsync(int id, QuizBankUpdate model)
     {
-        var account = _quizBankService.Update(id, model, Account);
+        var account = await _quizBankService.Update(id, model, Account);
         return Ok(account);
     }
 
     [Authorize]
     [HttpDelete("{id:int}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> DeleteAsync(int id)
     {
-        _quizBankService.Delete(id, Account);
+        await _quizBankService.Delete(id, Account);
         return Ok(new { message = "QuizBank deleted successfully" });
     }
 
     [Authorize]
     [HttpPost("rating/{id:int}")]
-    public ActionResult<QuizBankResponse> Rating(int id, [FromQuery] RatingRequest rating)
+    public async Task<ActionResult<QuizBankResponse>> RatingAsync(int id, [FromQuery] RatingRequest rating)
     {
-        var result = _quizBankService.Rating(id, Account, rating.Star);
+        var result = await _quizBankService.Rating(id, Account, rating.Star);
         return Ok(result);
     }
 
