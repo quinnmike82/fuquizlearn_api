@@ -19,9 +19,9 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public ActionResult<AuthenticateResponse> Authenticate(AuthenticateRequest model)
+    public async Task<ActionResult<AuthenticateResponse>> AuthenticateAsync(AuthenticateRequest model)
     {
-        var response = _accountService.Authenticate(model, ipAddress());
+        var response = await _accountService.Authenticate(model, ipAddress());
         setTokenCookie(response.RefreshToken.token);
         return Ok(response);
     }
@@ -38,9 +38,9 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("refresh-token")]
-    public ActionResult<AuthenticateResponse> RefreshToken(string token)
+    public async Task<ActionResult<AuthenticateResponse>> RefreshTokenAsync(string token)
     {
-        var response = _accountService.RefreshToken(token, ipAddress());
+        var response = await _accountService.RefreshToken(token, ipAddress());
         /* setTokenCookie(response.RefreshToken);*/
 
         return Ok(new
@@ -94,9 +94,9 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("validate-reset-token")]
-    public IActionResult VerifyResetPasswordPin(VerifyResetAccountPinRequest model)
+    public async Task<IActionResult> VerifyResetPasswordPinAsync(VerifyResetAccountPinRequest model)
     {
-        var requireAccount = _accountService.GetByEmail(model.Email);
+        var requireAccount = await _accountService.GetByEmail(model.Email);
 
         var isVerified = _accountService.ValidateResetToken(model.Pin, requireAccount);
         var token = _accountService.IssueForgotPasswordToken(requireAccount);

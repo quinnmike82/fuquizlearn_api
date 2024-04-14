@@ -34,13 +34,6 @@ public class QuizBankController : BaseController
         var result = await _quizBankService.GetBySubject(options, tag, Account);
         return Ok(result);
     }
-    [AllowAnonymous]
-    [HttpGet("GetOther")]
-    public async Task<ActionResult<PagedResponse<QuizBankResponse>>> GetOther([FromQuery] PagedRequest options)
-    {
-        var result = await _quizBankService.GetBySubject(options, Account);
-        return Ok(result);
-    }
 
     [AllowAnonymous]
     [HttpGet("GetMyQuizBank")]
