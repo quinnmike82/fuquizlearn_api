@@ -52,7 +52,7 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("revoke-token")]
-    public IActionResult RevokeToken(RevokeTokenRequest model)
+    public async Task<IActionResult> RevokeTokenAsync(RevokeTokenRequest model)
     {
         // accept token from request body or cookie
         var token = model.Token ?? Request.Cookies["refreshToken"];
@@ -64,31 +64,31 @@ public class AuthController : BaseController
         if (!Account.OwnsToken(token) && Account.Role != Role.Admin)
             return Unauthorized(new { message = "Unauthorized" });
 
-        _accountService.RevokeToken(token, ipAddress());
+        await _accountService.RevokeToken(token, ipAddress());
         return Ok(new { message = "Token revoked" });
     }
 
     [AllowAnonymous]
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterRequest model)
+    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest model)
     {
-        _accountService.Register(model);
+        await _accountService.Register(model);
         return Ok(new { message = "Registration successful, please check your email for verification instructions" });
     }
 
     [AllowAnonymous]
     [HttpPost("verify-email")]
-    public IActionResult VerifyEmail(VerifyEmailRequest model)
+    public async Task<IActionResult> VerifyEmailAsync(VerifyEmailRequest model)
     {
-        _accountService.VerifyEmail(model.Email, model.Token);
+        await _accountService.VerifyEmail(model.Email, model.Token);
         return Ok(new { message = "Verification successful, you can now login" });
     }
 
     [AllowAnonymous]
     [HttpPost("forgot-password")]
-    public IActionResult ForgotPassword(ForgotPasswordRequest model)
+    public async Task<IActionResult> ForgotPasswordAsync(ForgotPasswordRequest model)
     {
-        var redirect = _accountService.ForgotPassword(model, Request.Headers["origin"]);
+        var redirect = await _accountService.ForgotPassword(model, Request.Headers["origin"]);
         return Ok(new { message = "Please check your email for password reset instructions", data = redirect });
     }
 
@@ -107,9 +107,9 @@ public class AuthController : BaseController
 
     [AllowAnonymous]
     [HttpPost("reset-password")]
-    public IActionResult ResetPassword(ResetPasswordRequest model)
+    public async Task<IActionResult> ResetPasswordAsync(ResetPasswordRequest model)
     {
-        _accountService.ResetPassword(model);
+        await _accountService.ResetPassword(model);
         return Ok(new { message = "Password reset successful, you can now login" });
     }
 

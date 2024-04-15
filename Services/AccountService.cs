@@ -423,9 +423,10 @@ public class AccountService : IAccountService
     public async Task Register(RegisterRequest model)
     {
         // validate
-        if (await _context.Accounts.AnyAsync(x => x.Email == model.Email)) throw new AppException("email-existed");
-
-        if (await _context.Accounts.AnyAsync(x => x.Username == model.Username)) throw new AppException("username-existed");
+        var checkEmail = await _context.Accounts.AnyAsync(x => x.Email.Equals(model.Email));
+        if (checkEmail) throw new AppException("email-existed");
+        var checkUser = await _context.Accounts.AnyAsync(x => x.Username == model.Username);
+        if (checkUser) throw new AppException("username-existed");
 
         // map model to new account object
         var account = _mapper.Map<Account>(model);
