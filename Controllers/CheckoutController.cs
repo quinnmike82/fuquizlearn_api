@@ -6,6 +6,7 @@ using Stripe.Checkout;
 using Stripe;
 using Plan = fuquizlearn_api.Entities.Plan;
 using fuquizlearn_api.Authorization;
+using fuquizlearn_api.Helpers;
 
 namespace fuquizlearn_api.Controllers
 {
@@ -30,6 +31,9 @@ namespace fuquizlearn_api.Controllers
         [HttpPost]
         public async Task<ActionResult> CheckoutOrder(int planId)
         {
+            var planCheck = await _planService.CheckCurrent(Account);
+            if (planCheck != null)
+                throw new AppException("Already Subscribe");
             var plan = await _planService.GetById(planId);
             if(plan == null)
                 throw new KeyNotFoundException(nameof(plan));
@@ -79,6 +83,9 @@ namespace fuquizlearn_api.Controllers
         // Example URL: https://localhost:7051/checkout/success?sessionId=si_123123123123
         public async Task<ActionResult> CheckoutSuccess(string sessionId)
         {
+            var planCheck = await _planService.CheckCurrent(Account);
+            if (planCheck != null)
+                throw new AppException("Already Subscribe");
             var sessionService = new SessionService();
             var session = await sessionService.GetAsync(sessionId);
             var check = await _planService.CheckPurchase(session.SubscriptionId);
