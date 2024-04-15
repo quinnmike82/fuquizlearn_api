@@ -37,27 +37,27 @@ public class AccountsController : BaseController
 
     [AllowAnonymous]
     [HttpGet("{id:int}")]
-    public ActionResult<AccountResponse> GetById(int id)
+    public async Task<ActionResult<AccountResponse>> GetByIdAsync(int id)
     {
         // users can get their own account and admins can get any account
         /*            if (id != Account.Id && Account.Role != Role.Admin)
                         return Unauthorized(new { message = "Unauthorized" });*/
 
-        var account = _accountService.GetById(id);
+        var account = await _accountService.GetById(id);
         return Ok(account);
     }
 
     [AllowAnonymous]
     [HttpPost]
-    public ActionResult<AccountResponse> Create(CreateRequest model)
+    public async Task<ActionResult<AccountResponse>> CreateAsync(CreateRequest model)
     {
-        var account = _accountService.Create(model);
+        var account = await _accountService.Create(model);
         return Ok(account);
     }
 
     [AllowAnonymous]
     [HttpPut("{id:int}")]
-    public ActionResult<AccountResponse> Update(int id, UpdateRequest model)
+    public async Task<ActionResult<AccountResponse>> UpdateAsync(int id, UpdateRequest model)
     {
         // users can update their own account and admins can update any account
         /*            if (id != Account.Id && Account.Role != Role.Admin)
@@ -67,7 +67,7 @@ public class AccountsController : BaseController
         if (Account.Role != Role.Admin)
             model.Role = null;
 
-        var account = _accountService.Update(id, model);
+        var account = await _accountService.Update(id, model);
         return Ok(account);
     }
 
@@ -81,23 +81,23 @@ public class AccountsController : BaseController
 
     [AllowAnonymous]
     [HttpDelete("{id:int}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> DeleteAsync(int id)
     {
         // users can delete their own account and admins can delete any account
         /*            if (id != Account.Id && Account.Role != Role.Admin)
                         return Unauthorized(new { message = "Unauthorized" });*/
 
-        _accountService.Delete(id);
+        await _accountService.Delete(id);
         return Ok(new { message = "Account deleted successfully" });
     }
 
     [AllowAnonymous]
     [HttpPost("ban/{id:int}")]
-    public IActionResult BanAccount(int id)
+    public async Task<IActionResult> BanAccountAsync(int id)
     {
         try
         {
-            _accountService.BanAccount(id, Request.Headers["origin"], Account);
+            await _accountService.BanAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account banned successfully" });
         }
         catch (AppException ex)
@@ -107,11 +107,11 @@ public class AccountsController : BaseController
     }
     [AllowAnonymous]
     [HttpPost("unban/{id:int}")]
-    public IActionResult UnbanAccount(int id)
+    public async Task<IActionResult> UnbanAccountAsync(int id)
     {
         try
         {
-            _accountService.UnbanAccount(id, Request.Headers["origin"], Account);
+            await _accountService.UnbanAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account unbanned successfully" });
         }
         catch (AppException ex)
@@ -122,11 +122,11 @@ public class AccountsController : BaseController
 
     [AllowAnonymous]
     [HttpPost("warning/{id:int}")]
-    public IActionResult WarningAccount(int id)
+    public async Task<IActionResult> WarningAccountAsync(int id)
     {
         try
         {
-            _accountService.WarningAccount(id, Request.Headers["origin"], Account);
+            await _accountService.WarningAccount(id, Request.Headers["origin"], Account);
             return Ok(new { message = "Account warned successfully" });
         }
         catch (AppException ex)
@@ -136,12 +136,12 @@ public class AccountsController : BaseController
     }
 
     [HttpPost("profile")]
-    public IActionResult GetUserProfile()
+    public async Task<IActionResult> GetUserProfileAsync()
     {
         try
         {
             var id = Account.Id;
-            var user = _accountService.GetById(id);
+            var user = await _accountService.GetById(id);
 
             return Ok(user);
         }
