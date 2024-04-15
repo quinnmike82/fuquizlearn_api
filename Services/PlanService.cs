@@ -138,8 +138,11 @@ namespace fuquizlearn_api.Services
             var planRes = _mapper.Map<List<PlanResponse>>(plan);
             var current = await _context.PlanAccounts.Include(c => c.Plan).FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Cancelled == null);
             if (current == null)
+            {
+                planRes[0].IsCurrent = true;
                 return planRes;
-            foreach( var c in planRes)
+            }
+            foreach ( var c in planRes)
             {
                 if(c.Id == current.Plan.Id)
                 {
