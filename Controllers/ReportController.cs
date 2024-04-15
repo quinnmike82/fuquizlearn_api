@@ -39,10 +39,10 @@ namespace fuquizlearn_api.Controllers
         }
         [Authorize]
         [HttpDelete]
-        public async Task<IActionResult> DeleteReport(int reportId)
+        public async Task<IActionResult> DeleteReport([FromBody] ReportDelete reportDelete)
         {
-            await _reportService.DeleteReport(reportId, Account);
-            return Ok("Report.Delete");
+            await _reportService.DeleteReport(reportDelete.ReportIds, Account);
+            return Ok();
         }
 
     }
