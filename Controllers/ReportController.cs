@@ -37,6 +37,13 @@ namespace fuquizlearn_api.Controllers
             await _reportService.VerifyReport(reportId, Account);
             return Ok();
         }
+        [Authorize]
+        [HttpDelete]
+        public async Task<IActionResult> DeleteReport(int reportId)
+        {
+            await _reportService.DeleteReport(reportId, Account);
+            return Ok();
+        }
 
     }
 }

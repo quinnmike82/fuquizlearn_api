@@ -9,5 +9,6 @@
         public Account? Owner { get; set; }
         public string Reason { get; set; }
         public bool IsActive { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 }

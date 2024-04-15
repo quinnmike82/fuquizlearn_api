@@ -17,6 +17,7 @@ namespace fuquizlearn_api.Services
         Task<ReportResponse> AddReport(ReportCreate report, Account account);
         Task<PagedResponse<ReportResponse>> GetAllReport(PagedRequest options, Account account);
         Task VerifyReport(int reportId, Account account);
+        Task DeleteReport(int reportId, Account account);
     }
     public class ReportService : IReportService
     {
@@ -61,7 +62,7 @@ namespace fuquizlearn_api.Services
         {
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
+            var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account).Where( c => c.DeletedAt == null).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
    q => q.Reason.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<ReportResponse>
             {
@@ -74,7 +75,7 @@ namespace fuquizlearn_api.Services
         {
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            var report = await _context.Reports.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == reportId);
+            var report = await _context.Reports.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == reportId && c.DeletedAt == null);
             if(report == null)
             {
                 throw new KeyNotFoundException(nameof(report));
@@ -102,6 +103,20 @@ namespace fuquizlearn_api.Services
                 await _notificationService.NotificationTrigger(new List<int> { report.Account.Id }, "Warning", "reported", string.Empty);
                 await _accountService.WarningAccount(report.Account.Id, string.Empty);
             }
+        }
+
+        public async Task DeleteReport(int reportId, Account account)
+        {
+            if (account.Role != Role.Admin)
+                throw new UnauthorizedAccessException("Not Admin");
+            var report = await _context.Reports.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == reportId);
+            if (report == null)
+            {
+                throw new KeyNotFoundException(nameof(report));
+            }
+            report.DeletedAt = DateTime.UtcNow;
+            _context.Reports.Update(report);
+            await _context.SaveChangesAsync();
         }
     }
 }
