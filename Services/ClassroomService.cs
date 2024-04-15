@@ -355,10 +355,10 @@ namespace fuquizlearn_api.Services
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
             var isAllow = classroom.Account.Id == account.Id;
-            if (!isAllow && classroom.isStudentAllowInvite)
+/*            if (!isAllow && classroom.isStudentAllowInvite)
             {
                 isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
-            }
+            }*/
             if (!isAllow) throw new UnauthorizedAccessException("Unauthorized");
 
             var result = new PagedResponse<QuizBankResponse>
