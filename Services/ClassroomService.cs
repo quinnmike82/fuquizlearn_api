@@ -357,7 +357,7 @@ namespace fuquizlearn_api.Services
             var isAllow = classroom.Account.Id == account.Id;
             if (!isAllow)
             {
-                isAllow = classroom.AccountIds.Contains(account.Id);
+                isAllow = classroom.AccountIds.Contains(account.Id) || account.Role == Role.Admin;
             }
             if (!isAllow) throw new UnauthorizedAccessException("Unauthorized");
 
