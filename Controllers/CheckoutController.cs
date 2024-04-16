@@ -122,7 +122,7 @@ namespace fuquizlearn_api.Controllers
             var check = await _planService.CheckCurrent(Account);
             if(check != null)
             {
-                await _planService.CancelledSubcribe(Account);
+                await _planService.CancelledSubcribe(Account, check.Plan.Id);
                 var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = true };
                 var service = new SubscriptionService();
                 await service.UpdateAsync(check.TransactionId, options);
