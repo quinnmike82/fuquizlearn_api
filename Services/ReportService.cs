@@ -75,7 +75,7 @@ namespace fuquizlearn_api.Services
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
             var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account)
-                .Where(c => c.DeletedAt == null).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
+                .Where(c => c.DeletedAt == null && c.IsActive == false).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
                     q => q.Reason.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
             return new PagedResponse<ReportResponse>
             {

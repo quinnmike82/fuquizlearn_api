@@ -355,10 +355,10 @@ namespace fuquizlearn_api.Services
             if (classroom == null)
                 throw new KeyNotFoundException("Could not find Classroom");
             var isAllow = classroom.Account.Id == account.Id;
-/*            if (!isAllow && classroom.isStudentAllowInvite)
+            if (!isAllow)
             {
-                isAllow = classroom.AccountIds != null && classroom.AccountIds.Contains(account.Id);
-            }*/
+                isAllow = classroom.AccountIds.Contains(account.Id) || account.Role == Role.Admin;
+            }
             if (!isAllow) throw new UnauthorizedAccessException("Unauthorized");
 
             var result = new PagedResponse<QuizBankResponse>
@@ -369,7 +369,7 @@ namespace fuquizlearn_api.Services
 
             if (classroom.BankIds != null)
             {
-                var quizbanks = await _context.QuizBanks.Include(q => q.Quizes).Where(q => classroom.BankIds.Contains(q.Id))
+                var quizbanks = await _context.QuizBanks.Include(c => c.Author).Include(q => q.Quizes).Where(q => classroom.BankIds.Contains(q.Id))
                     .ToPagedAsync(options,
                     x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
                 result.Data = _mapper.Map<List<QuizBankResponse>>(quizbanks.Data);
