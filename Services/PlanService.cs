@@ -29,7 +29,7 @@ namespace fuquizlearn_api.Services
         Task<List<PlanResponse>> GetAllPlan(Account account);
         Task<PlanAccount> RegisterPlan(int id, string transactionId, Account account);
         Task<PlanAccount> CheckCurrent(Account account);
-        Task CancelledSubcribe(Account account, int planId);
+        Task CancelledSubcribe(int p);
         Task<bool> CheckAICount(Account account);
         Task<Plan> GetById(int id);
         Task<bool> CheckPurchase(string transactionId);
@@ -44,9 +44,9 @@ namespace fuquizlearn_api.Services
             _mapper = mapper;
         }
 
-        public async Task CancelledSubcribe(Account account, int planId)
+        public async Task CancelledSubcribe(int planAccountId)
         { 
-            var result = await _context.PlanAccounts.FirstOrDefaultAsync(c => c.Account.Id == account.Id && c.Plan.Id == planId);
+            var result = await _context.PlanAccounts.FirstOrDefaultAsync(c => c.Id == planAccountId);
             if(result == null)
             {
                 throw new AppException("Not have plan");
