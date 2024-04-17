@@ -409,14 +409,15 @@ namespace fuquizlearn_api.Services
 
             var gameRecord = await _context.GameRecords.FirstOrDefaultAsync(g => g.GameId == gameId && g.Account.Id == account.Id);
 
-            if (gameRecord != null && (DateTime.UtcNow - gameRecord.Created.ToUniversalTime()).Minutes > 30)
+            if (gameRecord != null && gameRecord.IsFinished)
             {
-                throw new AppException("Can not re-join after 30 minutes");
+                throw new AppException("Can not re-join the game");
             }
             gameRecord = new GameRecord
             {
                 AccountId = account.Id,
                 GameId = gameId,
+                IsFinished = false,
             };
 
             _context.GameRecords.Add(gameRecord);
@@ -656,6 +657,13 @@ namespace fuquizlearn_api.Services
             else
             {
                 result = await _context.GameQuizs.Where(q => q.GameId == gameId && q.Id == currentQuizId +1).FirstOrDefaultAsync();
+            }
+            if (result == null)
+            {
+                var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
+                gameRecord.IsFinished = true;
+                _context.GameRecords.Update(gameRecord);
+                await _context.SaveChangesAsync();
             }
 
             return _mapper.Map<GameQuizResponse>(result);

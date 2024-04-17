@@ -8,6 +8,7 @@
         public int AccountId { get; set; }
         public Account Account { get; set; }
         public List<AnswerHistory> AnswerHistories { get; set; }
+        public bool IsFinished { get; set; }
         public int TotalMark => AnswerHistories.Count(a => a.IsCorrect);
         public DateTime Created { get; set; } = DateTime.UtcNow;
         public DateTime? Updated { get; set; }
