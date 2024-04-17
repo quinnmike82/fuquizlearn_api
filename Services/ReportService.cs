@@ -88,7 +88,7 @@ namespace fuquizlearn_api.Services
         {
             if (account.Role != Role.Admin)
                 throw new UnauthorizedAccessException("Not Admin");
-            var report = await _context.Reports.Include(c => c.Account)
+            var report = await _context.Reports.Include(c => c.Account).Include(c => c.QuizBank)
                 .FirstOrDefaultAsync(c => c.Id == reportId && c.DeletedAt == null);
             if (report == null)
             {
