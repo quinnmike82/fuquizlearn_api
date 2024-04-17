@@ -19,26 +19,31 @@ namespace fuquizlearn_api.Controllers
         [HttpGet("{month:int}")]
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll(int month, [FromQuery] PagedRequest options)
         {
-            return await _transactionService.GetAllTransaction(options, month, Account);
+            var result = await _transactionService.GetAllTransaction(options, month, Account);
+            return Ok(result);
         }
         [HttpGet]
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAll( [FromQuery] PagedRequest options)
         {
-            return await _transactionService.GetAllTransaction(options, Account);
+            var result = await _transactionService.GetAllTransaction(options, Account);
+            return Ok(result);
         }
         [HttpGet("getbyyear/{year:int}")]
         public async Task<ActionResult<List<ChartTransaction>>> GetChart(int year) { 
-            return await _transactionService.GetByYear(year, Account);
+            var result = await _transactionService.GetByYear(year, Account);
+            return Ok(result);
         }
         [HttpGet("current")]
         public async Task<ActionResult<PagedResponse<TransactionResponse>>> GetAllCurrent([FromQuery] PagedRequest options)
         {
-            return await _transactionService.GetCurrentTransaction(options, Account);
+            var result = await _transactionService.GetCurrentTransaction(options, Account);
+            return Ok(result);
         }
         [HttpPost]
         public async Task<ActionResult<TransactionResponse>> Create([FromBody] TransactionCreate trans)
         {
-            return await _transactionService.CreateTransaction(trans, Account);
+            var result = await _transactionService.CreateTransaction(trans, Account);
+            return Ok(result);
         }
     }
 }
