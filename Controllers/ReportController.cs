@@ -22,13 +22,15 @@ namespace fuquizlearn_api.Controllers
         [HttpGet]
         public async Task<ActionResult<PagedResponse<ReportResponse>>> GetAllReports([FromQuery] PagedRequest options)
         {
-            return await _reportService.GetAllReport(options, Account);
+            var result = await _reportService.GetAllReport(options, Account);
+            return Ok(result);
         }
         [Authorize]
         [HttpPost]
         public async Task<ActionResult<ReportResponse>> GetAllReports([FromBody] ReportCreate report)
         {
-            return await _reportService.AddReport(report, Account);
+            var result = await _reportService.AddReport(report, Account);
+            return Ok(result);
         }
         [Authorize]
         [HttpPost("verify/{reportId}")]
