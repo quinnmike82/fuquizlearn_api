@@ -99,7 +99,8 @@ namespace fuquizlearn_api.Services
 
             if (gameCreate.ClassroomId != null)
             {
-                classroom = await _context.Classrooms.FindAsync(gameCreate.ClassroomId);
+                classroom = await _context.Classrooms.Include(c => c.Account)
+                    .FirstOrDefaultAsync(c => c.Id == gameCreate.ClassroomId);
                 if (classroom == null)
                 {
                     throw new KeyNotFoundException($"Can not found classroom with id: {gameCreate.ClassroomId}");
@@ -408,9 +409,9 @@ namespace fuquizlearn_api.Services
 
             var gameRecord = await _context.GameRecords.FirstOrDefaultAsync(g => g.GameId == gameId && g.Account.Id == account.Id);
 
-            if (gameRecord != null)
+            if (gameRecord != null && (DateTime.UtcNow - gameRecord.Created.ToUniversalTime()).Minutes > 30)
             {
-                //throw new AppException("User already joined in the game");
+                throw new AppException("Can not re-join after 30 minutes");
             }
             gameRecord = new GameRecord
             {
