@@ -16,7 +16,7 @@ namespace fuquizlearn_api.Controllers
             _searchTextService = searchService;
         }
         [HttpGet("SearchGlobal")]
-        public async Task<ActionResult> GetAllPosts([FromQuery] PagedRequest options)
+        public async Task<ActionResult<Dictionary<string, List<object>>>> GetAllPosts([FromQuery] PagedRequest options)
         {
             var result = await _searchTextService.Search(options);
             return Ok(result);
