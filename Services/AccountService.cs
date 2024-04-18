@@ -99,7 +99,7 @@ public class AccountService : IAccountService
 
         // validate
         if (account == null || !BC.Verify(model.Password, account.PasswordHash))
-            throw new AppException("Email or password is incorrect");
+            throw new AppException("Errors.Login.WrongEmailPassword");
 
         // authentication successful so generate jwt and refresh tokens
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
@@ -108,7 +108,7 @@ public class AccountService : IAccountService
         var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
         var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
 
-        if (refreshToken == null || jwtToken == null) throw new AppException("Error when issues token");
+        if (refreshToken == null || jwtToken == null) throw new AppException("Errors.Token.Issue");
 
         account.RefreshTokens.Add(refreshToken);
 
@@ -135,8 +135,8 @@ public class AccountService : IAccountService
 
     public async Task<AuthenticateResponse> GoogleAuthenticate(LoginGoogleRequest model, string ipAddress)
     {
-        var email = await _googleService.GetEmailByToken(model.Token) ?? throw new AppException("Email is invalid");
-        var account = await GetByEmail(email) ?? throw new AppException("Account not found");
+        var email = await _googleService.GetEmailByToken(model.Token) ?? throw new AppException("Validations.errors.signup.email");
+        var account = await GetByEmail(email) ?? throw new AppException("ForgotPassword.errors.account-fail");
 
         // authentication successful so generate jwt and refresh tokens
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
@@ -145,7 +145,7 @@ public class AccountService : IAccountService
         var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
         var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
 
-        if (refreshToken == null || jwtToken == null) throw new AppException("Error when issues token");
+        if (refreshToken == null || jwtToken == null) throw new AppException("Errors.Token.Issue");
 
         account.RefreshTokens.Add(refreshToken);
 
@@ -185,7 +185,7 @@ public class AccountService : IAccountService
         }
 
         if (!refreshToken.IsActive)
-            throw new AppException("Invalid token");
+            throw new AppException("Errors.Token.Invalid");
 
         // replace old refresh token with a new one (rotate token)
         var newRefreshToken = rotateRefreshToken(refreshToken, ipAddress);
@@ -226,7 +226,7 @@ public class AccountService : IAccountService
         var refreshToken = account.RefreshTokens.Single(x => x.Token == token);
 
         if (!refreshToken.IsActive)
-            throw new AppException("Invalid token");
+            throw new AppException("Errors.Token.Invalid");
 
         // revoke token and save
         revokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");
@@ -239,7 +239,7 @@ public class AccountService : IAccountService
         var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token && x.Email == email);
 
         if (account == null)
-            throw new AppException("verification-failed");
+            throw new AppException("Errors.verification-failed");
 
         account.Verified = DateTime.UtcNow;
         account.VerificationToken = null;
@@ -266,7 +266,7 @@ public class AccountService : IAccountService
         var account = await _context.Accounts.SingleOrDefaultAsync(x => x.Email == model.Email);
 
         // always return ok response to prevent email enumeration
-        if (account == null) throw new AppException("account-fail");
+        if (account == null) throw new AppException("ForgotPassword.errors.account-fail");
         var generatePin = _helperCryptoService.GeneratePIN(6);
         var hashedPin = _helperCryptoService.HashSHA256(generatePin);
         var token = IssueForgotPasswordToken(account);
@@ -292,8 +292,8 @@ public class AccountService : IAccountService
         var claims = _helperEncryptService.JwtDecrypt(_appSettings.ForgotPasswordSecret, model.Token);
         var email = claims.Claims.First(claim => claim.Type == "email").Value;
         var account = await _context.Accounts.FirstOrDefaultAsync(account => account.Email == email);
-        if (account == null) throw new AppException("account-fail");
-        if (account.ResetToken == null) throw new AppException("token-expire");
+        if (account == null) throw new AppException("ForgotPassword.errors.account-fail");
+        if (account.ResetToken == null) throw new AppException("ForgotPassword.errors.account-fail");
         // update password and remove reset token
         account.PasswordHash = BC.HashPassword(model.Password);
         account.PasswordReset = DateTime.UtcNow;
@@ -325,9 +325,9 @@ public class AccountService : IAccountService
     {
         // validate
         if (await _context.Accounts.AnyAsync(x => x.Email == model.Email))
-            throw new AppException($"Email '{model.Email}' is already registered");
+            throw new AppException($"Errors.email-existed");
         if (await _context.Accounts.AnyAsync(x => x.Username == model.Username))
-            throw new AppException($"Username '{model.Username}' is already registered");
+            throw new AppException($"Errors.username-existed");
 
         // map model to new account object
         var account = _mapper.Map<Account>(model);
@@ -350,7 +350,7 @@ public class AccountService : IAccountService
 
         // validate
         if (account.Email != model.Email && _context.Accounts.Any(x => x.Email == model.Email))
-            throw new AppException($"Email '{model.Email}' is already registered");
+            throw new AppException($"Errors.email-existed");
 
         // hash password if it was entered
         if (!string.IsNullOrEmpty(model.Password))
@@ -417,7 +417,7 @@ public class AccountService : IAccountService
     public async Task<Account> GetByEmail(string email)
     {
         var account = await _context.Accounts.FirstOrDefaultAsync(x => x.Email == email);
-        return account ?? throw new KeyNotFoundException("Account not found");
+        return account ?? throw new KeyNotFoundException("ForgotPassword.errors.account-fail");
     }
 
     public async Task Register(RegisterRequest model)
@@ -451,14 +451,14 @@ public class AccountService : IAccountService
     private async Task<Account> getAccount(int id)
     {
         var account = await _context.Accounts.FindAsync(id);
-        if (account == null) throw new KeyNotFoundException("Account not found");
+        if (account == null) throw new KeyNotFoundException("ForgotPassword.errors.account-fail");
         return account;
     }
 
     private async Task<Account> getAccountByRefreshToken(string token)
     {
         var account = await _context.Accounts.SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
-        if (account == null) throw new AppException("Invalid token");
+        if (account == null) throw new AppException("Errors.Token.Invalid");
         return account;
     }
 
@@ -466,7 +466,7 @@ public class AccountService : IAccountService
     {
         var account = await _context.Accounts.SingleOrDefaultAsync(x =>
             x.ResetToken == token && x.ResetTokenExpires > DateTime.UtcNow);
-        if (account == null) throw new AppException("Invalid token");
+        if (account == null) throw new AppException("Errors.Token.Invalid");
         return account;
     }
 
@@ -671,11 +671,11 @@ public class AccountService : IAccountService
         var entity = await _context.Accounts.FirstOrDefaultAsync(acc => acc.Id == account.Id);
         if (entity == null)
         {
-            throw new KeyNotFoundException("Could not find current account");
+            throw new KeyNotFoundException("ForgotPassword.errors.account-fail");
         }
         if(!BC.Verify(model.OldPassword, entity.PasswordHash))
         {
-            throw new AppException("Wrong old password");
+            throw new AppException("Errors.ChangePassword.WrongOldPassword");
         }
         entity.PasswordHash = BC.HashPassword(model.Password);
         _context.Accounts.Update(entity);
