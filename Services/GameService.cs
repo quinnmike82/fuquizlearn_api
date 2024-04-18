@@ -51,24 +51,24 @@ namespace fuquizlearn_api.Services
                                            .FirstOrDefaultAsync(g => g.Id == answerHistoryRequest.GameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
 
             var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == answerHistoryRequest.GameId && gr.AccountId == account.Id);
             if (gameRecord == null)
             {
-                throw new AppException("User has not joined in the game yet");
+                throw new AppException("Errors.Game.UserNotJoined");
             }
 
             if (game.Duration != null && DateTime.UtcNow > gameRecord.Created.AddMinutes(game.Duration ?? 0))
             {
-                throw new AppException("Exceeding time limit");
+                throw new AppException("Errors.Game.ExceedTime");
             }
 
             var gameQuiz = await _context.GameQuizs.FirstOrDefaultAsync(q => q.Id == answerHistoryRequest.QuizId);
             if (gameQuiz == null)
             {
-                throw new AppException("Can not find quiz");
+                throw new AppException("Errors.Quiz.not_found");
             }
 
             var answerHistory = await _context.AnswerHistories.FirstOrDefaultAsync(a => a.GameRecordId == gameRecord.Id && a.GameQuizId == answerHistoryRequest.QuizId);
@@ -95,33 +95,34 @@ namespace fuquizlearn_api.Services
         {
             var classroom = new Classroom();
             var quizBank = await _context.QuizBanks.Include(qb => qb.Quizes).FirstOrDefaultAsync(qb => qb.Id == gameCreate.QuizBankId);
-            if (quizBank == null) throw new KeyNotFoundException($"Can not found quizbank with id: {gameCreate.QuizBankId}");
+            if (quizBank == null) throw new KeyNotFoundException($"Errors.Quizbank.not_found");
 
             if (gameCreate.ClassroomId != null)
             {
-                classroom = await _context.Classrooms.FindAsync(gameCreate.ClassroomId);
+                classroom = await _context.Classrooms.Include(c => c.Account)
+                    .FirstOrDefaultAsync(c => c.Id == gameCreate.ClassroomId);
                 if (classroom == null)
                 {
-                    throw new KeyNotFoundException($"Can not found classroom with id: {gameCreate.ClassroomId}");
+                    throw new KeyNotFoundException($"Errors.classroom.not_found");
                 }
                 if (classroom.Account.Id != account.Id)
                 {
-                    throw new UnauthorizedAccessException("Unauthorized");
+                    throw new UnauthorizedAccessException("Errors.Unauthorized");
                 }
 
                 if (classroom.BankIds == null || !classroom.BankIds.Contains(gameCreate.QuizBankId))
                 {
-                    throw new AppException("QuizBank is not included in classroom");
+                    throw new AppException("Errors.Classroom.NotIncludeQuizbank");
                 }
             }
             else if (quizBank.Visibility != Visibility.Public && quizBank.Author.Id != account.Id)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             if (gameCreate.Amount > quizBank.Quizes.Count)
             {
-                throw new AppException("Amount is larger than quizbank size");
+                throw new AppException("Errors.Game.QuizSize");
             }
 
 
@@ -148,7 +149,7 @@ namespace fuquizlearn_api.Services
                                             .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
 
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
@@ -159,12 +160,12 @@ namespace fuquizlearn_api.Services
             }
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorize");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             if (game.Status != GameStatus.OnGoing)
             {
-                throw new AppException("Game is not started or has been ended");
+                throw new AppException("Errors.Game.NotStarted");
             }
 
             game.Status = GameStatus.Ended;
@@ -180,11 +181,11 @@ namespace fuquizlearn_api.Services
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId);
             if (classroom == null)
             {
-                throw new KeyNotFoundException($"Can not found classroom with id: {classroomId}");
+                throw new KeyNotFoundException($"Errors.classroom.not_found");
             }
             if (classroom.Account.Id != account.Id && !classroom.AccountIds.Contains(account.Id))
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             var games = await _context.Games.Where(g => g.ClassroomId == classroomId)
@@ -216,7 +217,7 @@ namespace fuquizlearn_api.Services
                                             .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
 
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
@@ -227,7 +228,7 @@ namespace fuquizlearn_api.Services
             }
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorize");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
             var gameRecords = await _context.GameRecords.Include(g => g.Account)
                                                         .Include(g => g.AnswerHistories)
@@ -248,7 +249,7 @@ namespace fuquizlearn_api.Services
                                            .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -260,7 +261,7 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             if (AutoUpdateGameStatus(ref game))
@@ -279,7 +280,7 @@ namespace fuquizlearn_api.Services
                                .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -291,7 +292,7 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             var gameRecord = await _context.GameRecords.Include(g => g.AnswerHistories)
@@ -300,7 +301,7 @@ namespace fuquizlearn_api.Services
 
             if (gameRecord == null)
             {
-                throw new KeyNotFoundException("There is no record");
+                throw new KeyNotFoundException("Errors.Game.NoRecord");
             }
 
             return _mapper.Map<GameRecordResponse>(gameRecord);
@@ -313,7 +314,7 @@ namespace fuquizlearn_api.Services
                                  .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
 
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
@@ -324,11 +325,11 @@ namespace fuquizlearn_api.Services
             }
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorize");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
             if (game.Status != GameStatus.Created)
             {
-                throw new AppException("Game already started or ended");
+                throw new AppException("Errors.Game.AlreadyStarted");
             }
 
             game.Status = GameStatus.OnGoing;
@@ -343,11 +344,11 @@ namespace fuquizlearn_api.Services
             var quizBank = await _context.QuizBanks.Include(qb => qb.Author).FirstOrDefaultAsync(qb => qb.Id == quizbankId);
             if (quizBank == null)
             {
-                throw new KeyNotFoundException($"Can not found quizbank with id: {quizBank}");
+                throw new KeyNotFoundException($"Errors.Quizbank.not_found");
             }
             if (quizBank.Visibility != Visibility.Public && quizBank.Author.Id != account.Id)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             var games = await _context.Games.Where(g => g.QuizBankId == quizbankId)
@@ -380,7 +381,7 @@ namespace fuquizlearn_api.Services
                                            .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -392,7 +393,7 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             if (AutoUpdateGameStatus(ref game))
@@ -403,19 +404,20 @@ namespace fuquizlearn_api.Services
 
             if (game.Status != GameStatus.OnGoing)
             {
-                throw new AppException("Game is not started or has been ended");
+                throw new AppException("Errors.Game.NotStarted");
             }
 
             var gameRecord = await _context.GameRecords.FirstOrDefaultAsync(g => g.GameId == gameId && g.Account.Id == account.Id);
 
-            if (gameRecord != null)
+            if (gameRecord != null && gameRecord.IsFinished)
             {
-                //throw new AppException("User already joined in the game");
+                throw new AppException("Errors.Game.NotReJoin");
             }
             gameRecord = new GameRecord
             {
                 AccountId = account.Id,
                 GameId = gameId,
+                IsFinished = false,
             };
 
             _context.GameRecords.Add(gameRecord);
@@ -429,7 +431,7 @@ namespace fuquizlearn_api.Services
                                            .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -441,7 +443,7 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
             var gamequizes = await _context.GameQuizs.Where(gq => gq.GameId == gameId)
                                                      .ToPagedAsync(option, a => true);
@@ -458,7 +460,7 @@ namespace fuquizlearn_api.Services
                                .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -470,12 +472,12 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
             var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
             if (gameRecord == null)
             {
-                throw new AppException("User has not joined in the game yet");
+                throw new AppException("Errors.Game.NotJoin");
             }
 
             var answerHistory = await _context.AnswerHistories.Include(a => a.GameQuiz)
@@ -495,18 +497,18 @@ namespace fuquizlearn_api.Services
                                            .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
 
             var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
             if (gameRecord == null)
             {
-                throw new AppException("User has not joined in the game yet");
+                throw new AppException("Errors.Game.NotJoin");
             }
 
             if (game.Duration != null && DateTime.UtcNow > gameRecord.Created.AddMinutes(game.Duration ?? 0))
             {
-                throw new AppException("Exceeding time limit");
+                throw new AppException("Errors.Game.ExceedTime");
             }
 
             foreach (var answerHistoryRequest in answerHistoryRequests)
@@ -514,7 +516,7 @@ namespace fuquizlearn_api.Services
                 var gameQuiz = await _context.GameQuizs.FirstOrDefaultAsync(q => q.Id == answerHistoryRequest.QuizId);
                 if (gameQuiz == null)
                 {
-                    throw new AppException("Can not find quiz");
+                    throw new AppException("Errors.Quiz.not_found");
                 }
                 var answerHistory = await _context.AnswerHistories.FirstOrDefaultAsync(a => a.GameRecordId == gameRecord.Id && a.GameQuizId == answerHistoryRequest.QuizId);
 
@@ -632,7 +634,7 @@ namespace fuquizlearn_api.Services
                                           .FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null)
             {
-                throw new KeyNotFoundException("Could not find game");
+                throw new KeyNotFoundException("Errors.game.not_found");
             }
             var permission = game.QuizBank.Visibility == Visibility.Public || game.QuizBank.Author.Id == account.Id;
 
@@ -644,7 +646,7 @@ namespace fuquizlearn_api.Services
 
             if (!permission)
             {
-                throw new UnauthorizedAccessException("Unauthorized");
+                throw new UnauthorizedAccessException("Errors.Unauthorized");
             }
 
             GameQuiz? result = null;
@@ -655,6 +657,13 @@ namespace fuquizlearn_api.Services
             else
             {
                 result = await _context.GameQuizs.Where(q => q.GameId == gameId && q.Id == currentQuizId +1).FirstOrDefaultAsync();
+            }
+            if (result == null)
+            {
+                var gameRecord = _context.GameRecords.FirstOrDefault(gr => gr.GameId == gameId && gr.AccountId == account.Id);
+                gameRecord.IsFinished = true;
+                _context.GameRecords.Update(gameRecord);
+                await _context.SaveChangesAsync();
             }
 
             return _mapper.Map<GameQuizResponse>(result);
