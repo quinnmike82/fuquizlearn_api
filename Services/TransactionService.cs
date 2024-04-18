@@ -73,7 +73,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, int month, Account account)
         {
             if(account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var trans = await _context.Transactions.Include(c => c.Account).Where(c => c.Created.Month.Equals(month)).OrderByDescending(c => c.Id)
                                                      .ToPagedAsync(options,
                 x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
@@ -88,7 +88,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<TransactionResponse>> GetAllTransaction(PagedRequest options, Account account)
         {
             if(account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var trans = await _context.Transactions.Include(c => c.Account).OrderByDescending(c => c.Id)
                                                      .ToPagedAsync(options,
                 x => x.Email.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
@@ -104,7 +104,7 @@ namespace fuquizlearn_api.Services
         public async Task<List<ChartTransaction>> GetByYear(int year, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             return await _context.ChartTransactions.Where(c => c.Year == year).OrderBy(c => c.Month).ToListAsync();
         }
     }

@@ -134,7 +134,7 @@ public class QuizBankService : IQuizBankService
     {
         var quizBank = await GetQuizBank(id);
         if (currentUser.Role != Role.Admin && currentUser.Id != quizBank.Author.Id)
-            throw new UnauthorizedAccessException("Errors.Unauthorized");
+            throw new UnauthorizedAccessException("Unauthorized");
         if(currentUser.Role == Role.Admin)
             await _notificationService.NotificationTrigger(new List<int> { quizBank.Author.Id }, "Warning", "deleted_quizbank", quizBank.BankName);
         _context.QuizBanks.Remove(quizBank);
@@ -145,10 +145,10 @@ public class QuizBankService : IQuizBankService
     {
         var quizBank = await GetQuizBank(id);
         if (account.Role != Role.Admin && account.Id != quizBank.Author.Id)
-            throw new UnauthorizedAccessException("Errors.Unauthorized");
+            throw new UnauthorizedAccessException("Unauthorized");
 
         var quiz = quizBank.Quizes.FirstOrDefault(x => x.Id == quizId);
-        if (quiz == null) throw new KeyNotFoundException("Errors.Quiz.not_found");
+        if (quiz == null) throw new KeyNotFoundException("Quiz.not_found");
         quizBank.Quizes.Remove(quiz);
         quizBank.Updated = DateTime.UtcNow;
 
@@ -238,7 +238,7 @@ public class QuizBankService : IQuizBankService
                 p.QuizBankId == quizbankId && p.AccountId == account.Id);
         if (progress == null)
         {
-            throw new KeyNotFoundException("Errors.Progress.not_found");
+            throw new KeyNotFoundException("Progress.not_found");
         }
 
         return _mapper.Map<ProgressResponse>(progress);
@@ -381,7 +381,7 @@ public class QuizBankService : IQuizBankService
         if (account.Id != 0) throw new UnauthorizedAccessException();
 
         var quiz = quizBank.Quizes.FirstOrDefault(x => x.Id == quizId);
-        if (quiz == null) throw new KeyNotFoundException("Errors.Quiz.not_found");
+        if (quiz == null) throw new KeyNotFoundException("Quiz.not_found");
         _mapper.Map(model, quiz);
         quiz.Updated = DateTime.UtcNow;
         quizBank.Updated = DateTime.UtcNow;
@@ -393,7 +393,7 @@ public class QuizBankService : IQuizBankService
     private async Task<QuizBank> GetQuizBank(int id)
     {
         var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id);
-        if (quizBank == null) throw new KeyNotFoundException("Errors.Quizbank.not_found");
+        if (quizBank == null) throw new KeyNotFoundException("Quizbank.not_found");
         return quizBank;
     }
 }

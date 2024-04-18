@@ -99,7 +99,7 @@ public class AccountService : IAccountService
 
         // validate
         if (account == null || !BC.Verify(model.Password, account.PasswordHash))
-            throw new AppException("Errors.Login.WrongEmailPassword");
+            throw new AppException("Login.WrongEmailPassword");
 
         // authentication successful so generate jwt and refresh tokens
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
@@ -108,7 +108,7 @@ public class AccountService : IAccountService
         var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
         var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
 
-        if (refreshToken == null || jwtToken == null) throw new AppException("Errors.Token.Issue");
+        if (refreshToken == null || jwtToken == null) throw new AppException("Token.Issue");
 
         account.RefreshTokens.Add(refreshToken);
 
@@ -145,7 +145,7 @@ public class AccountService : IAccountService
         var refreshToken = _jwtUtils.GenerateRefreshToken(ipAddress);
         var refreshTokenExpires = _helperDateService.ConvertToUnixTimestamp(refreshToken.Expires);
 
-        if (refreshToken == null || jwtToken == null) throw new AppException("Errors.Token.Issue");
+        if (refreshToken == null || jwtToken == null) throw new AppException("Token.Issue");
 
         account.RefreshTokens.Add(refreshToken);
 
@@ -185,7 +185,7 @@ public class AccountService : IAccountService
         }
 
         if (!refreshToken.IsActive)
-            throw new AppException("Errors.Token.Invalid");
+            throw new AppException("Token.Invalid");
 
         // replace old refresh token with a new one (rotate token)
         var newRefreshToken = rotateRefreshToken(refreshToken, ipAddress);
@@ -226,7 +226,7 @@ public class AccountService : IAccountService
         var refreshToken = account.RefreshTokens.Single(x => x.Token == token);
 
         if (!refreshToken.IsActive)
-            throw new AppException("Errors.Token.Invalid");
+            throw new AppException("Token.Invalid");
 
         // revoke token and save
         revokeRefreshToken(refreshToken, ipAddress, "Revoked without replacement");
@@ -239,7 +239,7 @@ public class AccountService : IAccountService
         var account = _context.Accounts.SingleOrDefault(x => x.VerificationToken == token && x.Email == email);
 
         if (account == null)
-            throw new AppException("Errors.verification-failed");
+            throw new AppException("verification-failed");
 
         account.Verified = DateTime.UtcNow;
         account.VerificationToken = null;
@@ -325,9 +325,9 @@ public class AccountService : IAccountService
     {
         // validate
         if (await _context.Accounts.AnyAsync(x => x.Email == model.Email))
-            throw new AppException($"Errors.email-existed");
+            throw new AppException($"email-existed");
         if (await _context.Accounts.AnyAsync(x => x.Username == model.Username))
-            throw new AppException($"Errors.username-existed");
+            throw new AppException($"username-existed");
 
         // map model to new account object
         var account = _mapper.Map<Account>(model);
@@ -350,7 +350,7 @@ public class AccountService : IAccountService
 
         // validate
         if (account.Email != model.Email && _context.Accounts.Any(x => x.Email == model.Email))
-            throw new AppException($"Errors.email-existed");
+            throw new AppException($"email-existed");
 
         // hash password if it was entered
         if (!string.IsNullOrEmpty(model.Password))
@@ -458,7 +458,7 @@ public class AccountService : IAccountService
     private async Task<Account> getAccountByRefreshToken(string token)
     {
         var account = await _context.Accounts.SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
-        if (account == null) throw new AppException("Errors.Token.Invalid");
+        if (account == null) throw new AppException("Token.Invalid");
         return account;
     }
 
@@ -466,7 +466,7 @@ public class AccountService : IAccountService
     {
         var account = await _context.Accounts.SingleOrDefaultAsync(x =>
             x.ResetToken == token && x.ResetTokenExpires > DateTime.UtcNow);
-        if (account == null) throw new AppException("Errors.Token.Invalid");
+        if (account == null) throw new AppException("Token.Invalid");
         return account;
     }
 
@@ -675,7 +675,7 @@ public class AccountService : IAccountService
         }
         if(!BC.Verify(model.OldPassword, entity.PasswordHash))
         {
-            throw new AppException("Errors.ChangePassword.WrongOldPassword");
+            throw new AppException("ChangePassword.WrongOldPassword");
         }
         entity.PasswordHash = BC.HashPassword(model.Password);
         _context.Accounts.Update(entity);

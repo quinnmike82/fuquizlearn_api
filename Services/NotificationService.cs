@@ -39,7 +39,7 @@ namespace fuquizlearn_api.Services
             var account = await _context.Accounts.FirstOrDefaultAsync(i => i.Id == noti.AccountId);
             if(account == null)
             {
-                throw new KeyNotFoundException("Errors.classroom.user_not_found");
+                throw new KeyNotFoundException("classroom.user_not_found");
             }
             var newNoti = _mapper.Map<Notification>(noti);
             newNoti.Account = account;
@@ -53,11 +53,11 @@ namespace fuquizlearn_api.Services
             var noti = await _context.Notifications.Include(i => i.Account).FirstOrDefaultAsync(i => i.Id == id);
             if(noti == null)
             {
-                throw new KeyNotFoundException("Errors.Notification.NotFound");
+                throw new KeyNotFoundException("Notification.NotFound");
             }
             if(account.Id != noti.Account?.Id && account.Role != Role.Admin)
             {
-                throw new UnauthorizedAccessException("Errors.Unauthorized");
+                throw new UnauthorizedAccessException("Unauthorized");
             }
             noti.Deleted = DateTime.UtcNow;
             _context.Notifications.Update(noti);
@@ -115,7 +115,7 @@ namespace fuquizlearn_api.Services
             }
             if (account.Id != noti.Account?.Id && account.Role != Role.Admin)
             {
-                throw new UnauthorizedAccessException("Errors.Unauthorized");
+                throw new UnauthorizedAccessException("Unauthorized");
             }
             noti.Read = DateTime.UtcNow;
             _context.Notifications.Update(noti);
@@ -128,7 +128,7 @@ namespace fuquizlearn_api.Services
             var noti = await _context.Notifications.Include(i => i.Account).FirstOrDefaultAsync(i => i.Id == notiUpdate.Id);
             if (noti == null)
             {
-                throw new KeyNotFoundException("Errors.Notification.NotFound");
+                throw new KeyNotFoundException("Notification.NotFound");
             }
             _mapper.Map(notiUpdate,noti);
             noti.Deleted = DateTime.UtcNow;
@@ -144,7 +144,7 @@ namespace fuquizlearn_api.Services
                 var account = await _context.Accounts.FirstOrDefaultAsync(c => c.Id == user);
                 if(account == null)
                 {
-                    throw new KeyNotFoundException("Errors.classroom.user_not_found");
+                    throw new KeyNotFoundException("classroom.user_not_found");
                 }
                 var noti = new NotificationCreate
                 {
