@@ -209,7 +209,7 @@ namespace fuquizlearn_api.Services
                 var wasMember = memberIds.Where(id => classroom.AccountIds.Contains(id));
                 if (wasMember.Any())
                 {
-                    throw new KeyNotFoundException($"Classroom.ExistedMember");
+                    throw new KeyNotFoundException($"classroom.ExistedMember");
                 }
 
                 classroom.AccountIds = classroom.AccountIds.Concat(memberIds).ToArray();
