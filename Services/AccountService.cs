@@ -100,7 +100,10 @@ public class AccountService : IAccountService
         // validate
         if (account == null || !BC.Verify(model.Password, account.PasswordHash))
             throw new AppException("Login.WrongEmailPassword");
-
+        if (account.isBan != null)
+        {
+            throw new AppException("Login.wasBaned");
+        }
         // authentication successful so generate jwt and refresh tokens
         var jwtToken = _helperEncryptService.AccessTokenEncrypt(account);
         var jwtExpires =
@@ -443,7 +446,7 @@ public class AccountService : IAccountService
         _context.SaveChanges();
         Console.WriteLine(account.VerificationToken);
         // send email
-        sendVerificationEmail(account, _helperFrontEnd.GetBaseUrl());
+        sendVerificationEmail(account, _helperFrontEnd.GetUrl("/signup/verify?email=" + HttpUtility.UrlEncode(account.Email)));
     }
 
     // helper methods
@@ -544,7 +547,7 @@ public class AccountService : IAccountService
         var htmlContent = File.ReadAllText(htmlFilePath);
         htmlContent = htmlContent.Replace("{user-name}", account.FullName);
         htmlContent = htmlContent.Replace("{CODE}", account.VerificationToken);
-        htmlContent = htmlContent.Replace("{link}", "FRONT END");
+        htmlContent = htmlContent.Replace("{link}", origin);
         htmlContent = htmlContent.Replace("{mail}", "ngocvlqt1995@gmail.com");
 
         _emailService.SendAsync(
