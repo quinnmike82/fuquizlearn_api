@@ -523,6 +523,10 @@ namespace fuquizlearn_api.Services
             if (code.IsExpired)
                 throw new AppException("Errors.classroom.code-invalid");
             await CheckMember(classroom, 1);
+            if(classroom.Account.Id == account.Id)
+            {
+                throw new AppException("Errors.Classroom.ExistedMember");
+            }
             var classroomMember = new ClassroomMember
             {
                 AccountId = account.Id,
