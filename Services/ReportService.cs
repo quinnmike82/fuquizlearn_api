@@ -45,7 +45,7 @@ namespace fuquizlearn_api.Services
             };
             if (report.QuizBankId == null && report.AccountId == null)
             {
-                throw new AppException("Fields missing");
+                throw new AppException("Errors.Report.FieldsMiss");
             }
 
             int id;
@@ -73,7 +73,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<ReportResponse>> GetAllReport(PagedRequest options, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Not Admin");
+                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
             var reports = await _context.Reports.Include(c => c.Owner).Include(c => c.QuizBank).Include(c => c.Account)
                 .Where(c => c.DeletedAt == null && c.IsActive == false).OrderByDescending(c => c.IsActive).ToPagedAsync(options,
                     q => q.Reason.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
@@ -87,7 +87,7 @@ namespace fuquizlearn_api.Services
         public async Task VerifyReport(int reportId, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Not Admin");
+                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
             var report = await _context.Reports.Include(c => c.Account).Include(c => c.QuizBank)
                 .FirstOrDefaultAsync(c => c.Id == reportId && c.DeletedAt == null);
             if (report == null)
@@ -97,7 +97,7 @@ namespace fuquizlearn_api.Services
 
             if (report.IsActive)
             {
-                throw new AppException("Report is already Actived");
+                throw new AppException("Errors.Report.AlreadyActive");
             }
             else
             {
@@ -127,7 +127,7 @@ namespace fuquizlearn_api.Services
         public async Task DeleteReport(List<int> reportIds, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Not Admin");
+                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
             var reports = await _context.Reports.Include(c => c.Account).Where(r => reportIds.Contains(r.Id)).ToListAsync();
             foreach (var report in reports)
             {

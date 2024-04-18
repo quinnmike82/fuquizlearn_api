@@ -38,7 +38,7 @@ namespace fuquizlearn_api.Services
         public async Task<List<Quiz>> GetAll(int bankId)
         {
                 var quizes = await _context.Quizes.Where(q => q.QuizBankId == bankId).ToListAsync();
-                return quizes ?? throw new KeyNotFoundException("Could not find the quiz");
+                return quizes ?? throw new KeyNotFoundException("Errors.Quiz.not_found");
         }
 
         public async Task<QuizResponse> AddQuizInBank(Account currentUser, QuizCreate model, int bankId)
@@ -57,14 +57,14 @@ namespace fuquizlearn_api.Services
         public async Task<QuizResponse> GetQuizById(int quizId)
         {
             var quiz = await _context.Quizes.FindAsync(quizId);    
-            if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
+            if (quiz == null) throw new KeyNotFoundException("Errors.Quiz.not_found");
             return _mapper.Map<QuizResponse>(quiz);     
         }
 
         public async Task<QuizResponse> UpdateQuiz(int quizId, QuizUpdate model)
         {
             var quiz = await _context.Quizes.FindAsync(quizId);
-            if (quiz == null) throw new KeyNotFoundException("Could not find the quiz");
+            if (quiz == null) throw new KeyNotFoundException("Errors.Quiz.not_found");
             _mapper.Map(model, quiz);
             quiz.Updated = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -117,7 +117,7 @@ namespace fuquizlearn_api.Services
         private async Task<QuizBank> CheckQuizBank(int bankId, Account currentUser)
         {
             var quizBank = await _context.QuizBanks.Include(c => c.Author).FirstOrDefaultAsync(c => c.Id == bankId);
-            if (quizBank == null) throw new KeyNotFoundException("Could not find quizbank");
+            if (quizBank == null) throw new KeyNotFoundException("Errors.Quizbank.not_found");
             if (quizBank.Visibility == Visibility.Public)
             {
                 return quizBank;
@@ -138,7 +138,7 @@ namespace fuquizlearn_api.Services
             var quiz = await _context.Quizes.FirstOrDefaultAsync(x => x.Id == quizId && x.QuizBankId == bankId);
             if (quiz == null)
             {
-                throw new KeyNotFoundException("Could not find the quiz");
+                throw new KeyNotFoundException("Errors.Quiz.not_found");
             }
 
             return quiz;
