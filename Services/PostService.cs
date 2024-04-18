@@ -49,7 +49,7 @@ namespace fuquizlearn_api.Services
         {
             var classroom = await _context.Classrooms.FirstOrDefaultAsync(i => i.Id == post.ClassroomId);
             if (classroom == null)
-                throw new KeyNotFoundException("Errors.classroom.not_found");
+                throw new KeyNotFoundException("classroom.not_found");
             var newPost = _mapper.Map<Post>(post);
             newPost.Author = account;
             newPost.Classroom  = classroom; 
@@ -63,7 +63,7 @@ namespace fuquizlearn_api.Services
         {
             var post = await GetPost(id);
              if (post == null)
-                throw new KeyNotFoundException("Errors.Post.not_found");
+                throw new KeyNotFoundException("Post.not_found");
              var postRes = _mapper.Map<PostResponse>(post);
             if (int.TryParse(post.BankLink, out id))
             {
@@ -125,7 +125,7 @@ namespace fuquizlearn_api.Services
             var post = await GetPost(id);
             if (post == null)
             {
-                throw new ArgumentException("Errors.Post.not_found");
+                throw new ArgumentException("Post.not_found");
             }
 
             _context.Posts.Remove(post);
@@ -137,7 +137,7 @@ namespace fuquizlearn_api.Services
             var post = await _context.Posts.Include(c => c.Classroom).ThenInclude(c => c.Account).Include(i => i.Comments).FirstOrDefaultAsync(p => p.Id == postId);
             if (post == null)
             {
-                throw new KeyNotFoundException("Errors.Post.not_found");
+                throw new KeyNotFoundException("Post.not_found");
             }
             int id;
             if(int.TryParse(post.BankLink, out id))
@@ -148,7 +148,7 @@ namespace fuquizlearn_api.Services
         private async Task<Post> CheckPost(int postId, Account currentUser)
         {
             var post = await GetPost(postId);
-            if (post == null) throw new KeyNotFoundException("Errors.Post.not_found");
+            if (post == null) throw new KeyNotFoundException("Post.not_found");
             if (post.Author.Id == currentUser.Id || currentUser.Role == Role.Admin) return _mapper.Map<Post>(post);
             throw new UnauthorizedAccessException();
         }
@@ -158,7 +158,7 @@ namespace fuquizlearn_api.Services
             var newComment = _mapper.Map<Comment>(comment);
             var post = await GetPost(postId);
             if (post == null)
-                throw new KeyNotFoundException("Errors.Post.not_found");
+                throw new KeyNotFoundException("Post.not_found");
             newComment.Author = account;
             if(post.Comments == null)
                 post.Comments = new List<Comment> { newComment };
@@ -172,7 +172,7 @@ namespace fuquizlearn_api.Services
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
             if (comment == null)
-                throw new KeyNotFoundException("Errors.Comment.not_found");
+                throw new KeyNotFoundException("Comment.not_found");
             return _mapper.Map<CommentResponse>(comment);
         }
 
@@ -192,7 +192,7 @@ namespace fuquizlearn_api.Services
         {
             var comment = await _context.Comments.FindAsync(id);
             if (comment == null)
-                throw new KeyNotFoundException("Errors.Comment.not_found");
+                throw new KeyNotFoundException("Comment.not_found");
 
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
@@ -201,7 +201,7 @@ namespace fuquizlearn_api.Services
         public async Task<bool> AddView(int postId, Account account)
         {
             var post = await GetPost(postId);
-            if (post == null) throw new KeyNotFoundException("Errors.Post.not_found");
+            if (post == null) throw new KeyNotFoundException("Post.not_found");
             if(post.ViewIds == null)
             {
                 post.ViewIds = new int[] {account.Id};
@@ -225,7 +225,7 @@ namespace fuquizlearn_api.Services
         public async Task<PagedResponse<AccountResponse>> GetAccountView(int postId, PagedRequest options)
         {
             var post = await GetPost(postId);
-            if (post == null) throw new KeyNotFoundException("Errors.Post.not_found");
+            if (post == null) throw new KeyNotFoundException("Post.not_found");
             if (post.ViewIds == null)
             {
                 post.ViewIds = new int[] { };

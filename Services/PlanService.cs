@@ -49,7 +49,7 @@ namespace fuquizlearn_api.Services
             var result = await _context.PlanAccounts.FirstOrDefaultAsync(c => c.Id == planAccountId);
             if(result == null)
             {
-                throw new AppException("Errors.Plan.NotHave");
+                throw new AppException("Plan.NotHave");
             }
             result.Cancelled = DateTime.UtcNow;
             _context.PlanAccounts.Update(result);
@@ -95,7 +95,7 @@ namespace fuquizlearn_api.Services
         public async Task<PlanResponse> CreatePlan(PlanCreate planCreate, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var plan = _mapper.Map<Plan>(planCreate);
             _context.Plans.Add(plan);
             await _context.SaveChangesAsync();
@@ -162,7 +162,7 @@ namespace fuquizlearn_api.Services
         {
             var plan = await _context.Plans.FirstOrDefaultAsync(plan => plan.Id.Equals(id));
             if (plan == null)
-                throw new KeyNotFoundException("Errors.Plan.NotFound");
+                throw new KeyNotFoundException("Plan.NotFound");
             var newRegist = new PlanAccount
             {
                 Account = account,
@@ -179,9 +179,9 @@ namespace fuquizlearn_api.Services
         public async Task RemovePlan(int id, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var plan = await _context.Plans.FirstOrDefaultAsync(plan => plan.Id.Equals(id));
-            if (plan == null) throw new KeyNotFoundException("Errors.Plan.NotFound");
+            if (plan == null) throw new KeyNotFoundException("Plan.NotFound");
             plan.Deleted = DateTime.UtcNow;
             _context.Plans.Update(plan);
             await _context.SaveChangesAsync();
@@ -190,9 +190,9 @@ namespace fuquizlearn_api.Services
         public async Task<PlanResponse> UnReleasePlan(int id, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var plan = await _context.Plans.FirstOrDefaultAsync(plan => plan.Id.Equals(id));
-            if (plan == null) throw new KeyNotFoundException("Errors.Plan.NotFound");
+            if (plan == null) throw new KeyNotFoundException("Plan.NotFound");
             plan.IsRelease = false;
             _context.Plans.Update(plan);
             await _context.SaveChangesAsync();
@@ -202,9 +202,9 @@ namespace fuquizlearn_api.Services
         public async Task<PlanResponse> UpdatePlan(PlanUpdate planUpdate, Account account)
         {
             if (account.Role != Role.Admin)
-                throw new UnauthorizedAccessException("Errors.Plan.NotAdmin");
+                throw new UnauthorizedAccessException("Plan.NotAdmin");
             var plan = await _context.Plans.FirstOrDefaultAsync(plan => plan.Id.Equals(planUpdate.Id));
-            if (plan == null) throw new KeyNotFoundException("Errors.Plan.NotFound");
+            if (plan == null) throw new KeyNotFoundException("Plan.NotFound");
             _mapper.Map(planUpdate,plan);
             _context.Plans.Update(plan);
             await _context.SaveChangesAsync();
