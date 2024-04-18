@@ -611,7 +611,7 @@ namespace fuquizlearn_api.Services
                 var wasMember = memberIds.Where(id => classroom.AccountIds.Contains(id));
                 if (wasMember.Any())
                 {
-                    throw new KeyNotFoundException($"these userId already be classroom's members:\n {wasMember}");
+                    throw new KeyNotFoundException("User is already a member");
                 }
             }
 
