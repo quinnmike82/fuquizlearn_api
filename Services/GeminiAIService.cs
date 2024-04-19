@@ -88,7 +88,11 @@ namespace fuquizlearn_api.Services
             };
             
             var response = await _httpEmbeddingClient.PostAsJsonAsync($"?key={_appSettings.GeminiAIApiKey}", request, cancellationToken);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var messages = await response.Content.ReadAsStringAsync();
+                throw new AppException(messages);
+            }
             var responseContent = await response.Content.ReadAsStringAsync();
             var embedResponse = JsonConvert.DeserializeObject<EmbedResponse>(responseContent);
             return embedResponse;
