@@ -55,7 +55,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
                 };
 
                 // Do update
-                var updateQuizBank = _quizBankService.Update(quizBankId, quizBankUpdate);
+                var updateQuizBank = await _quizBankService.Update(quizBankId, quizBankUpdate);
                 _logger.LogInformation("Embedding for quizbank [{quizBankId}]{quizbank} processed successfully", quizBankId,quizbank.BankName);
             }
 
@@ -69,7 +69,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
                 };
                 // Do update
 
-                var updateQuiz = _quizService.UpdateQuiz(quiz.Id, quizUpdate);
+                var updateQuiz = await _quizService.UpdateQuiz(quiz.Id, quizUpdate);
                 _logger.LogInformation("Embedding for quiz {quizId} that belong to [{quizbankId}]{quizbankName} processed successfully", quiz.Id,quizBankId,quizbank.BankName);
             }
 
