@@ -56,7 +56,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
 
                 // Do update
                 var updateQuizBank = _quizBankService.Update(quizBankId, quizBankUpdate);
-                _logger.LogDebug("Embedding for quizbank {quizBankId} processed successfully", quizBankId);
+                _logger.LogInformation("Embedding for quizbank [{quizBankId}]{quizbank} processed successfully", quizBankId,quizbank.BankName);
             }
 
             foreach (var quiz in quizzes)
@@ -70,7 +70,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
                 // Do update
 
                 var updateQuiz = _quizService.UpdateQuiz(quiz.Id, quizUpdate);
-                _logger.LogDebug("Embedding for quiz {quizId} that belong to {quizbankId} processed successfully", quiz.Id,quizBankId);
+                _logger.LogInformation("Embedding for quiz {quizId} that belong to [{quizbankId}]{quizbankName} processed successfully", quiz.Id,quizBankId,quizbank.BankName);
             }
 
 
