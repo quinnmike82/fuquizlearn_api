@@ -14,8 +14,8 @@ using SendGrid.Extensions.DependencyInjection;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
-
-
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 // add services to DI container
 {

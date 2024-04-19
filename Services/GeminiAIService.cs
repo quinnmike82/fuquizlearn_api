@@ -78,7 +78,6 @@ namespace fuquizlearn_api.Services
             var request = new EmbedContentRequest
             {
                 TaskType = TaskType.SEMANTIC_SIMILARITY,
-                Title = "Embedding",
                 Content = new Content()
                 {
                     Parts = textStrings.Select(text => new Part
