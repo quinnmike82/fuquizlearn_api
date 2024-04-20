@@ -79,7 +79,7 @@ public class EmbeddingQueueService : IEmbeddingQueueService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing embedding queue for quiz bank {quizBankId}", quizBankId);
-            // End
+            throw;
         }
     }
 
