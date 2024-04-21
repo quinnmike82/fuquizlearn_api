@@ -114,7 +114,7 @@ namespace fuquizlearn_api.Services
             }
             else if (entityType == typeof(QuizBank))
             {
-                var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Where(q => ids.Contains(q.Id) && q.DeletedAt == null).ToListAsync();
                 var quizBankResponses = _mapper.Map<List<QuizBankResponse>>(quizBanks);
                 objects.Add("quizBanks", quizBankResponses.Cast<object>().ToList());
             }
@@ -126,7 +126,7 @@ namespace fuquizlearn_api.Services
             }
             else if (entityType == typeof(Classroom))
             {
-                var classrooms = await _context.Classrooms.Include(c => c.Account).Where(q => ids.Contains(q.Id)).ToListAsync();
+                var classrooms = await _context.Classrooms.Include(c => c.Account).Where(q => ids.Contains(q.Id) && q.DeletedAt == null).ToListAsync();
                 var classroomResponses = _mapper.Map<List<ClassroomResponse>>(classrooms);
                 objects.Add("classrooms", classroomResponses.Cast<object>().ToList());
             }

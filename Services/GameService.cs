@@ -413,7 +413,7 @@ namespace fuquizlearn_api.Services
             {
                 throw new AppException("Game.NotReJoin");
             }
-            gameRecord = new GameRecord
+            gameRecord ??= new GameRecord
             {
                 AccountId = account.Id,
                 GameId = gameId,
