@@ -135,9 +135,10 @@ public class QuizBankService : IQuizBankService
         var quizBank = await GetQuizBank(id);
         if (currentUser.Role != Role.Admin && currentUser.Id != quizBank.Author.Id)
             throw new UnauthorizedAccessException("Unauthorized");
-        if(currentUser.Role == Role.Admin)
-            quizBank.DeletedAt = DateTime.UtcNow;
+        if(currentUser.Role == Role.Admin){
             await _notificationService.NotificationTrigger(new List<int> { quizBank.Author.Id }, "Warning", "deleted_quizbank", quizBank.BankName);
+        }
+        quizBank.DeletedAt = DateTime.UtcNow;
         _context.QuizBanks.Update(quizBank);
         await _context.SaveChangesAsync();
     }
