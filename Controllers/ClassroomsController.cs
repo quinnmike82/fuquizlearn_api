@@ -35,7 +35,7 @@ namespace fuquizlearn_api.Controllers
         [Authorize]
         public async Task<ActionResult<ClassroomResponse>> GetClassroomById(int id)
         {
-            var result = await _classroomService.GetClassroomById(id);
+            var result = await _classroomService.GetClassroomById(id, Account);
             if (result == null)
                 return NotFound();
             return Ok(result);

@@ -21,7 +21,7 @@ namespace fuquizlearn_api.Services
     public interface IClassroomService
     {
         Task<ClassroomResponse> CreateClassroom(ClassroomCreate classroom, Account account);
-        Task<ClassroomResponse> GetClassroomById(int id);
+        Task<ClassroomResponse> GetClassroomById(int id, Account account);
         Task<PagedResponse<ClassroomResponse>> GetAllClassrooms(PagedRequest options);
         Task<List<ClassroomResponse>> GetAllClassroomsByUserId(int id);
         Task<PagedResponse<ClassroomResponse>> GetAllClassroomsByAccountId(PagedRequest options, Account account);
@@ -480,9 +480,13 @@ namespace fuquizlearn_api.Services
             };
         }
 
-        public async Task<ClassroomResponse> GetClassroomById(int id)
+        public async Task<ClassroomResponse> GetClassroomById(int id, Account account)
         {
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
+            if(Array.IndexOf(classroom.AccountIds, account.Id) == -1 && account.Id != classroom.Account.Id)
+            {
+                throw new AppException("classroom.not_found");
+            }
             return _mapper.Map<ClassroomResponse>(classroom);
         }
 
