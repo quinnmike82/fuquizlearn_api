@@ -135,9 +135,11 @@ public class QuizBankService : IQuizBankService
         var quizBank = await GetQuizBank(id);
         if (currentUser.Role != Role.Admin && currentUser.Id != quizBank.Author.Id)
             throw new UnauthorizedAccessException("Unauthorized");
-        if(currentUser.Role == Role.Admin)
+        if(currentUser.Role == Role.Admin){
             await _notificationService.NotificationTrigger(new List<int> { quizBank.Author.Id }, "Warning", "deleted_quizbank", quizBank.BankName);
-        _context.QuizBanks.Remove(quizBank);
+        }
+        quizBank.DeletedAt = DateTime.UtcNow;
+        _context.QuizBanks.Update(quizBank);
         await _context.SaveChangesAsync();
     }
 
@@ -161,6 +163,7 @@ public class QuizBankService : IQuizBankService
         if(account.Role != Role.Admin)
             throw new UnauthorizedAccessException();
         var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author).Include(q => q.Quizes)
+            .Where(q => q.DeletedAt == null)
             .ToPagedAsync(options,
                 x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
         return new PagedResponse<QuizBankResponse>
@@ -194,7 +197,7 @@ public class QuizBankService : IQuizBankService
             var quizBanks = await _context.QuizBanks
             .Include(c => c.Quizes)
             .Include(c => c.Author)
-            .Where(q => q.Tags != null && !subjects.Any(s => q.Tags.Contains(s)))
+            .Where(q => q.Tags != null && !subjects.Any(s => q.Tags.Contains(s)) && q.DeletedAt == null)
             .ToPagedAsync(options, x => x.BankName.ToLower().Contains(decodedSearch));
             return new PagedResponse<QuizBankResponse>
             {
@@ -206,7 +209,7 @@ public class QuizBankService : IQuizBankService
         {
          var quizBanks = await _context.QuizBanks.Include(c => c.Quizes)
                     .Include(c => c.Author)
-                    .Where(q => q.Tags != null && q.Tags.Contains(tag))
+                    .Where(q => q.Tags != null && q.Tags.Contains(tag) && q.DeletedAt == null)
                     .ToPagedAsync(options,
                         x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
                 return new PagedResponse<QuizBankResponse>
@@ -221,7 +224,7 @@ public class QuizBankService : IQuizBankService
     public async Task<PagedResponse<QuizBankResponse>> GetMy(PagedRequest options, Account account)
     {
         var quizBanks = await _context.QuizBanks.Include(c => c.Quizes).Include(c => c.Author)
-            .Where(qb => qb.Author.Id == account.Id).ToPagedAsync(options,
+            .Where(qb => qb.Author.Id == account.Id && qb.DeletedAt == null).ToPagedAsync(options,
                 x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
         return new PagedResponse<QuizBankResponse>
         {
@@ -392,7 +395,7 @@ public class QuizBankService : IQuizBankService
 
     private async Task<QuizBank> GetQuizBank(int id)
     {
-        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id);
+        var quizBank = await _context.QuizBanks.Include(i => i.Author).Include(q => q.Quizes).FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
         if (quizBank == null) throw new KeyNotFoundException("Quizbank.not_found");
         return quizBank;
     }

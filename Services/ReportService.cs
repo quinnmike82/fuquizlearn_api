@@ -110,11 +110,15 @@ namespace fuquizlearn_api.Services
             {
                 var quizbank = await _context.QuizBanks.Include(c => c.Author)
                     .FirstOrDefaultAsync(c => c.Id == report.QuizBank.Id);
-                _context.QuizBanks.Remove(quizbank);
-                await _context.SaveChangesAsync();
-                await _notificationService.NotificationTrigger(new List<int> { quizbank.Author.Id }, "Warning",
-                    "deleted_quizbank", quizbank.BankName);
-                await _accountService.WarningAccount(quizbank.Author.Id, string.Empty);
+                if (quizbank != null)
+                {
+                    quizbank.DeletedAt = DateTime.UtcNow;
+                    _context.QuizBanks.Update(quizbank);
+                    await _context.SaveChangesAsync();
+                    await _notificationService.NotificationTrigger(new List<int> { quizbank.Author.Id }, "Warning",
+                        "deleted_quizbank", quizbank.BankName);
+                    await _accountService.WarningAccount(quizbank.Author.Id, string.Empty);
+                }
             }
             else
             {

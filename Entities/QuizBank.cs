@@ -18,6 +18,7 @@ public class QuizBank
     public List<string>? Tags { get; set; }
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime? Updated { get; set; }
+    public DateTime? DeletedAt { get; set; }
    
     [Column(TypeName = "vector(768)")]   
     public Vector? Embedding { get; set; }

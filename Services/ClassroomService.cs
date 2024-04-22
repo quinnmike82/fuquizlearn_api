@@ -75,7 +75,7 @@ namespace fuquizlearn_api.Services
             }
             var check = await _context.ClassroomsMembers.FirstOrDefaultAsync(c => c.ClassroomId == addMember.classroomId && c.AccountId == addMember.memberId);
             if (check != null)
-                throw new AppException("Classroom.ExistedMember");
+                throw new AppException("classroom.ExistedMember");
             if (classRoom.Account.Id != account.Id)
             {
                 throw new UnauthorizedAccessException("Unauthorized");
@@ -135,7 +135,7 @@ namespace fuquizlearn_api.Services
             var banmembers = Array.IndexOf(classroom.BanMembers, memberId);
             if (banmembers != -1)
             {
-                throw new AppException("Classroom.AlreadyBanned");
+                throw new AppException("classroom.AlreadyBanned");
             }
             if (classroom.BanMembers == null)
             {
@@ -166,7 +166,7 @@ namespace fuquizlearn_api.Services
             var banmembers = classroom.BanMembers.Intersect(membersRequest.MemberIds).Any();
             if (banmembers)
             {
-                throw new AppException("Classroom.AlreadyBanned");
+                throw new AppException("classroom.AlreadyBanned");
             }
             if (classroom.BanMembers == null)
             {
@@ -199,7 +199,7 @@ namespace fuquizlearn_api.Services
             }
             if ((bool)(classroom.BanMembers?.Intersect(memberIds).Any()))
             {
-                throw new AppException("Classroom.AlreadyBanned");
+                throw new AppException("classroom.AlreadyBanned");
             }
             await CheckMember(classroom, memberIds.Count());
             memberIds = memberIds.Distinct().ToList();
@@ -236,7 +236,7 @@ namespace fuquizlearn_api.Services
 
             if (classroom.AccountIds == null)
             {
-                throw new AppException("Classroom.NoMember");
+                throw new AppException("classroom.NoMember");
             }
 
             var isNotMember = memberIds.Where(id => !classroom.AccountIds.Contains(id));
@@ -369,7 +369,7 @@ namespace fuquizlearn_api.Services
 
             if (classroom.BankIds != null)
             {
-                var quizbanks = await _context.QuizBanks.Include(c => c.Author).Include(q => q.Quizes).Where(q => classroom.BankIds.Contains(q.Id))
+                var quizbanks = await _context.QuizBanks.Include(c => c.Author).Include(q => q.Quizes).Where(q => classroom.BankIds.Contains(q.Id) && q.DeletedAt == null)
                     .ToPagedAsync(options,
                     x => x.BankName.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
                 result.Data = _mapper.Map<List<QuizBankResponse>>(quizbanks.Data);
@@ -516,12 +516,12 @@ namespace fuquizlearn_api.Services
             var banmembers = Array.IndexOf(classroom.BanMembers, account.Id);
             if (banmembers != -1)
             {
-                throw new AppException("Classroom.AlreadyBanned");
+                throw new AppException("classroom.AlreadyBanned");
             }
             var check = await _context.ClassroomsMembers.FirstOrDefaultAsync(i => i.ClassroomId == classroom.Id && i.AccountId == account.Id);
             if (check != null)
             {
-                throw new AppException("Classroom.ExistedMember");
+                throw new AppException("classroom.ExistedMember");
             }
             var code = classroom.ClassroomCodes.Single(i => i.Code == classroomCode);
             if (code.IsExpired)
@@ -529,7 +529,7 @@ namespace fuquizlearn_api.Services
             await CheckMember(classroom, 1);
             if(classroom.Account.Id == account.Id)
             {
-                throw new AppException("Classroom.ExistedMember");
+                throw new AppException("classroom.ExistedMember");
             }
             var classroomMember = new ClassroomMember
             {
@@ -599,7 +599,7 @@ namespace fuquizlearn_api.Services
             var classroom = await _context.Classrooms.Include(c => c.Account).FirstOrDefaultAsync(c => c.Id == classroomId && c.DeletedAt == null);
             if (classroom == null)
             {
-                throw new KeyNotFoundException("lassroom.not_found");
+                throw new KeyNotFoundException("classroom.not_found");
             }
             var isAllow = classroom.Account.Id == account.Id;
             if (!isAllow && classroom.isStudentAllowInvite)
@@ -619,7 +619,7 @@ namespace fuquizlearn_api.Services
                 var wasMember = memberIds.Where(id => classroom.AccountIds.Contains(id));
                 if (wasMember.Any())
                 {
-                    throw new KeyNotFoundException($"Classroom.ExistedMember");
+                    throw new KeyNotFoundException($"classroom.ExistedMember");
                 }
             }
 
@@ -658,7 +658,7 @@ namespace fuquizlearn_api.Services
             var banmembers = membersRequest.MemberIds.Where(item => !classroom.BanMembers.Contains(item));
             if (banmembers.Count() > 0)
             {
-                throw new AppException("Classroom.AlreadyBanned");
+                throw new AppException("classroom.AlreadyBanned");
             } 
             var updatedAccountIds = classroom.BanMembers.ToList();
             foreach (var member in membersRequest.MemberIds)
