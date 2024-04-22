@@ -82,7 +82,7 @@ namespace fuquizlearn_api.Services
 
         public async Task<PagedResponse<PostResponse>> GetAllPosts(int classroomId, PagedRequest options)
         {
-            var posts = await _context.Posts.Include(c => c.Classroom).Include(c => c.Account).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToPagedAsync(options,
+            var posts = await _context.Posts.Include(c => c.Classroom).Include(c => c.Author).Include(i => i.Comments).Where(p => p.Classroom.Id == classroomId).Include(i => i.Comments).ToPagedAsync(options,
             x => x.Title.ToLower().Contains(HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower()));
 
             var pages = new PagedResponse<PostResponse>
