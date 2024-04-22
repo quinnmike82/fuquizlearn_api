@@ -610,6 +610,7 @@ namespace fuquizlearn_api.Services
                         });
                         break;
                     case GameQuizType.Dnd:
+                        moreQuizes = moreQuizes.Take(2).ToList();
                         moreQuizes.Add(quiz);
                         result.Add(new GameQuiz
                         {
