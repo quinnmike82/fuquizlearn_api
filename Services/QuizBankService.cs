@@ -186,8 +186,8 @@ public class QuizBankService : IQuizBankService
             "Math",
             "Literature",
             "Science",
-            "Language",
-            "Computer",
+            "Languages",
+            "Computer Science",
             "Geography"
         };
         var decodedSearch = HttpUtility.UrlDecode(options.Search, Encoding.ASCII).ToLower();
